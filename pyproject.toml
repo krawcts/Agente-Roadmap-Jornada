@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.12"
 huggingface-hub = "^0.29.3"
 python-dotenv = "^1.0.1"
+pytest = "^8.3.5"
 
 
 [build-system]
