@@ -3,7 +3,7 @@ import json
 
 
 def get_data_dir():
-    """Retorna o caminho para o diretório de dados """
+    """Retorna o caminho para o diretório de dados"""
     # Caminho para a pasta data relativo ao diretório raiz do projeto
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')   
     return data_dir
@@ -18,7 +18,8 @@ def load_file(filename, file_type=None):
                                   Se None, será determinado pela extensão.
     
     Returns:
-        O conteúdo do arquivo como string (txt) ou objeto (json), ou None em caso de erro.
+        O conteúdo do arquivo como string (txt) ou objeto Python (json), 
+        ou None em caso de erro.
     """
     # Lista de tipos de arquivo suportados
     SUPPORTED_TYPES = ['txt', 'json']
@@ -39,10 +40,10 @@ def load_file(filename, file_type=None):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             if file_type == 'json':
-                content = json.load(file)
+                content = json.load(file)  # Retorna um dicionário para JSON
                 print(f"Arquivo JSON '{filename}' carregado com sucesso.")
             else:  # assume txt
-                content = file.read()
+                content = file.read()  # Retorna uma string para txt
                 print(f"Arquivo de texto '{filename}' carregado com sucesso.")
             return content
     except FileNotFoundError:
