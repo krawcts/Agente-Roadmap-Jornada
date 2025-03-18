@@ -1,6 +1,6 @@
 import os
 import json
-import csv
+
 
 def get_data_dir():
     """Retorna o caminho para o diretório de dados """
