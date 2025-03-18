@@ -3,10 +3,6 @@ import json
 import sys
 import os
 
-# Adiciona o diretório src ao path do Python
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-
-# Agora importa o módulo da localização correta
 from utils.data_loader import load_file, get_data_dir
 
 # Fixture to mock the data directory
