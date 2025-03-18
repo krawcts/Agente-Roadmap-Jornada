@@ -28,6 +28,9 @@ if not guidelines:
     print("Erro: Não foi possível carregar as guidelines.")
     exit(1)
 
+# Obtém informações de calendário com base no questionário
+calendario_info = get_calendar_info(questionario_aluno)
+
 # ---------- MONTAGEM DO PROMPT ----------
 # Prompt para introduzir o conteúdo do curso
 prompt_conteudo_curso = f"""
