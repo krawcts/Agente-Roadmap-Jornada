@@ -1,4 +1,5 @@
-
+from datetime import datetime, timedelta
+from utils.data_loader import load_file
 
 def get_calendar_info(questionario_aluno=None):
     """
@@ -9,12 +10,9 @@ def get_calendar_info(questionario_aluno=None):
                                   incluindo a data de início desejada.
     
     Returns:
-        dict: Dicionário com informações processadas do calendário e texto formatado.
+        str: Texto formatado com informações de calendário para o prompt da LLM.
     """
-    calendar_info = {
-        "data_inicio_str": None,
-        "feriados_no_periodo": [],
-        "texto_formatado": ""  # Campo para armazenar o texto formatado para o prompt
-    }
-
-    return calendar_info
+    # Carrega informações de feriados e eventos do arquivo JSON
+    calendario_dados = load_file('calendario_dados.json')
+    
+    return calendario_dados

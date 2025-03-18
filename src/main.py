@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 
 from utils.data_loader import load_file
+from utils.calendar_info import get_calendar_info
 
 # Carrega as variáveis de ambiente
 load_dotenv()
