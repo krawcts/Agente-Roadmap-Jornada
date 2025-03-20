@@ -13,7 +13,7 @@ FILES = {
 # Configurações do modelo de linguagem
 MODEL = {
     "NAME": "meta-llama/Llama-3.2-3B-Instruct",
-    "MAX__OUT_TOKENS": 1500,
+    "MAX_OUT_TOKENS": 1500,
 }
 
 # Configurações de validação
