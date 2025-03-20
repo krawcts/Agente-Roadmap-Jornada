@@ -1,5 +1,6 @@
 from utils.data_loader import load_file
 from utils.calendar_info import get_calendar_info
+from loguru import logger
 
 def make_final_prompt():
     """
@@ -8,27 +9,37 @@ def make_final_prompt():
     Returns:
         str: Prompt formatado pronto para ser enviado ao modelo.
     """
-    # ---- CARREGAMENTO DOS DADOS ----
-    # Carrega o conteúdo do curso 
-    conteudo_curso = load_file('conteudo_curso.json')
-    if not conteudo_curso:
-        print("Erro: Não foi possível carregar o conteúdo do curso.")
-        exit(1)
+        # ---- CARREGAMENTO DOS DADOS ----
+    try:
+        # Carrega o conteúdo do curso
+        conteudo_curso = load_file('conteudo_curso.json')
+        if not conteudo_curso:
+            raise FileNotFoundError("Conteúdo do curso não encontrado ou vazio")
 
-    # Carrega as respostas do questionário do aluno
-    questionario_aluno = load_file('questionario_aluno.json')
-    if not questionario_aluno:
-        print("Erro: Não foi possível carregar o questionário do aluno.")
-        exit(1)
+        # Carrega as respostas do questionário do aluno
+        questionario_aluno = load_file('questionario_aluno.json')
+        if not questionario_aluno:
+            raise FileNotFoundError("Questionário do aluno não encontrado ou vazio")
 
-    # Carrega as guidelines para criação do plano de estudos
-    guidelines = load_file('guidelines.txt')
-    if not guidelines:
-        print("Erro: Não foi possível carregar as guidelines.")
-        exit(1)
+        # Carrega as guidelines para criação do plano de estudos
+        guidelines = load_file('guidelines.txt')
+        if not guidelines:
+            raise FileNotFoundError("Guidelines não encontradas ou vazias")
 
-    # Obtém informações de calendário com base no questionário
-    calendario_info = get_calendar_info(questionario_aluno)
+        # Obtém informações de calendário com base no questionário
+        try:
+            calendario_info = get_calendar_info(questionario_aluno)
+        except Exception as e:
+            logger.error(f"Erro ao processar informações de calendário: {e}")
+            calendario_info = "## INFORMAÇÕES DE CALENDÁRIO\nNão foi possível obter informações detalhadas de calendário."
+
+    except FileNotFoundError as e:
+        logger.error(f"Erro crítico ao carregar dados: {e}")
+        logger.error("Não é possível continuar sem os arquivos essenciais.")
+        raise RuntimeError(f"Falha ao inicializar o gerador de plano de estudos: {e}")
+    except Exception as e:
+        logger.error(f"Erro inesperado durante o carregamento de dados: {e}")
+        raise RuntimeError(f"Erro inesperado: {e}")
 
     # ---- MONTAGEM DO PROMPT ----
     # Prompt para introduzir o conteúdo do curso

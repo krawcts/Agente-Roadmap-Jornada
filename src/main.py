@@ -1,24 +1,42 @@
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 import os
+import sys
+from loguru import logger
 from prompt_maker import make_final_prompt
 
 # Carrega as variáveis de ambiente
 load_dotenv()
 HF_TOKEN = os.getenv('HF_TOKEN')
 
-# Gera o prompt final
-prompt_final = make_final_prompt()
+if not HF_TOKEN:
+    logger.error("Token HF_TOKEN não encontrado nas variáveis de ambiente.")
+    sys.exit(1)
 
-# Inicializa o cliente de inferência
-client = InferenceClient(
-    "meta-llama/Llama-3.2-3B-Instruct",
-    token=f"{HF_TOKEN}",
-)
+try:
+    # Gera o prompt final
+    logger.info("Gerando prompt para o plano de estudos...")
+    prompt_final = make_final_prompt()
 
-output = client.text_generation(
-    prompt_final,
-    max_new_tokens=1500,
-)
+    # Inicializa o cliente de inferência
+    logger.info("Inicializando cliente de inferência com a API Hugging Face...")
+    client = InferenceClient(
+        "meta-llama/Llama-3.2-3B-Instruct",
+        token=f"{HF_TOKEN}",
+    )
 
-print(output)
+    logger.info("Enviando prompt para o modelo e aguardando resposta...")
+    output = client.text_generation(
+        prompt_final,
+        max_new_tokens=1500,
+    )
+
+    logger.success("Plano de estudos gerado com sucesso!")
+    print(output)
+
+except RuntimeError as e:
+    logger.error(f"Erro ao gerar o plano de estudos: {e}")
+    sys.exit(1)
+except Exception as e:
+    logger.exception("Erro inesperado durante a execução")
+    sys.exit(1)
