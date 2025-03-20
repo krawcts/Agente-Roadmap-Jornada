@@ -1,0 +1,44 @@
+# DIRETRIZES PARA CRIAÇÃO DO PLANO DE ESTUDOS EM ENGENHARIA DE DADOS
+
+## FUNDAMENTOS ESSENCIAIS
+Os seguintes cursos devem ser priorizados para formar uma base sólida em engenharia de dados:
+
+1. Bootcamp Intensivo Python - Base fundamental para qualquer engenheiro de dados
+2. Bootcamp Intensivo SQL - Conhecimento essencial para manipulação de dados
+3. Bootcamp Cloud para Dados - Fundamental para trabalhar com dados em escala
+4. Workshop Git e Github - Ferramenta imprescindível para controle de versão
+5. Workshop Infra, Linux, Docker - Infraestrutura é essencial para engenharia de dados
+
+## PRINCÍPIOS PARA O PLANO DE ESTUDOS
+
+1. PROGRESSÃO DE DIFICULDADE
+   - Iniciar com conteúdos de nível "iniciante" e progredir gradualmente
+   - Não agendar conteúdos avançados antes de concluir os pré-requisitos básicos
+
+2. EQUILÍBRIO NA DISTRIBUIÇÃO
+   - Distribuir a carga de estudo de acordo com o tempo disponível do aluno
+   - Alternar entre bootcamps (mais longos) e workshops (mais curtos)
+   - Evitar agendar mais de 2 horas de estudo para um mesmo dia
+
+3. PRÁTICA E APLICAÇÃO
+   - Após cada módulo de aprendizado, reservar tempo para exercícios práticos
+   - Incluir pequenos projetos que integrem múltiplos conhecimentos
+
+4. PONTO DE VERIFICAÇÃO
+   - A cada 2-3 semanas, incluir um dia para revisão dos conceitos aprendidos
+   - Estes pontos de verificação servem como momentos para consolidar o aprendizado
+
+5. SEQUÊNCIA RECOMENDADA
+   - Iniciar pelo Bootcamp Python e Workshop Git/Github
+   - Prosseguir para SQL após adquirir as bases de programação
+   - Cloud e Docker/Infra devem vir após dominar os fundamentos de programação e banco de dados
+
+6. PERSONALIZAÇÃO
+   - Respeitar o nível de conhecimento e objetivos específicos do aluno
+   - Ajustar o ritmo conforme o desempenho e feedback do aluno
+
+## CONSIDERAÇÕES ESPECÍFICAS
+
+1. Para iniciantes absolutos, considerar iniciar com apenas 1 hora diária, aumentando gradualmente
+2. Para alunos com conhecimento prévio em Python, pode-se acelerar esta parte ou focar em módulos específicos
+3. Os workshops devem ser intercalados com bootcamps para proporcionar uma experiência de aprendizado variada

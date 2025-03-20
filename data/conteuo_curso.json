@@ -1,0 +1,212 @@
+{
+  "bootcamps": [
+    {
+      "nome": "Bootcamp Intensivo Python",
+      "tipo": "bootcamp",
+      "aulas": 20,
+      "duracao_por_aula": "1h",
+      "duracao_total": "20h",
+      "modulos": [
+        {"nome": "Módulo 1 (Aula 1-5)", "descricao": "Fundamentos de Python"},
+        {"nome": "Módulo 2 (Aula 6-10)", "descricao": "Estruturas de dados e funções"},
+        {"nome": "Módulo 3 (Aula 11-15)", "descricao": "Programação orientada a objetos"},
+        {"nome": "Módulo 4 (Aula 16-20)", "descricao": "Bibliotecas para análise de dados"}
+      ],
+      "nivel": "iniciante a intermediário"
+    },
+    {
+      "nome": "Bootcamp Intensivo SQL",
+      "tipo": "bootcamp",
+      "aulas": 15,
+      "duracao_por_aula": "1h",
+      "duracao_total": "15h",
+      "modulos": [
+        {"nome": "Módulo 1 (Aula 1-5)", "descricao": "SQL básico e consultas simples"},
+        {"nome": "Módulo 2 (Aula 6-10)", "descricao": "Joins, agregações e subconsultas"},
+        {"nome": "Módulo 3 (Aula 11-15)", "descricao": "SQL avançado e otimização"}
+      ],
+      "nivel": "iniciante a intermediário"
+    },
+    {
+      "nome": "Bootcamp Cloud para Dados",
+      "tipo": "bootcamp",
+      "aulas": 18,
+      "duracao_por_aula": "1h",
+      "duracao_total": "18h",
+      "descricao": "Aprenda a utilizar serviços de nuvem para engenharia de dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Bootcamp DBT Core",
+      "tipo": "bootcamp",
+      "aulas": 5,
+      "duracao_por_aula": "1h",
+      "duracao_total": "5h",
+      "descricao": "Transformação de dados com DBT (Data Build Tool)",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Bootcamp Power BI",
+      "tipo": "bootcamp",
+      "aulas": 5,
+      "duracao_por_aula": "1h",
+      "duracao_total": "5h",
+      "descricao": "Visualização e análise de dados com Power BI",
+      "nivel": "iniciante a intermediário"
+    },
+    {
+      "nome": "Bootcamp Avançado Python com Webscraping",
+      "tipo": "bootcamp",
+      "aulas": 10,
+      "duracao_por_aula": "1h",
+      "duracao_total": "10h",
+      "modulos": [
+        {"nome": "Módulo 1 (Aula 1-5)", "descricao": "Técnicas avançadas de webscraping"},
+        {"nome": "Módulo 2 (Aula 6-10)", "descricao": "Automação e processamento de dados web"}
+      ],
+      "nivel": "avançado"
+    }
+  ],
+  "workshops": [
+    {
+      "nome": "Workshop Git e Github",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Controle de versão e colaboração usando Git e GitHub",
+      "nivel": "iniciante"
+    },
+    {
+      "nome": "Como estruturar seu projeto de dados do Zero",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Melhores práticas para estruturar projetos de dados",
+      "nivel": "iniciante a intermediário"
+    },
+    {
+      "nome": "Do Jupyter Notebook para o Deploy",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Como transformar análises exploratórias em produtos de dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Como construir um DW sem pagar muito",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Estratégias para data warehousing com baixo custo",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Estruturando um projeto e processo",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Metodologias e fluxos de trabalho para projetos de dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Pydantic, Data Quality e TDD em Dados",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Garantia de qualidade de dados com Python",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Infra, Linux, Docker",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Fundamentos de infraestrutura para dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Airflow Workflow Orchestration Deploy",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Orquestração de fluxos de dados com Apache Airflow",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Redis, MongoDB, NoSQL",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Bancos de dados não relacionais para engenharia de dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "REST API, FastAPI, Deploys",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Criação e implantação de APIs para dados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Event-Driven com Amazon SQS e Lambda AWS",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Arquiteturas orientadas a eventos na AWS",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Arquitetura Streaming com Kafka",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Processamento de dados em tempo real com Kafka",
+      "nivel": "avançado"
+    },
+    {
+      "nome": "Realtime dashboards com streamlit",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Criação de dashboards interativos em tempo real",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Infra as a Code com Terraform",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Gerenciamento de infraestrutura como código",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Extração de dados em PDF e Regex",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Técnicas para extração de dados de documentos não estruturados",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Técnicas Modernas de Integração e Extração de Dados",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Métodos avançados para ETL e ELT",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Observabilidade em Pipeline de Dados",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Monitoramento e rastreabilidade em fluxos de dados",
+      "nivel": "intermediário a avançado"
+    },
+    {
+      "nome": "Azure para Engenharia de Dados",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Soluções de dados na plataforma Microsoft Azure",
+      "nivel": "intermediário"
+    },
+    {
+      "nome": "Multiengine ETL: Databricks e DuckDB",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Integração de diferentes engines para processamento de dados",
+      "nivel": "avançado"
+    },
+    {
+      "nome": "Data Sprint: Dos requisitos até o Deploy",
+      "tipo": "workshop",
+      "duracao": "4h",
+      "descricao": "Metodologia ágil aplicada a projetos de dados",
+      "nivel": "intermediário a avançado"
+    }
+  ]
+}

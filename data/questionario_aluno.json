@@ -1,0 +1,11 @@
+{
+    "nome": "João Silva",
+    "email": "joao.silva@exemplo.com",
+    "nivel_conhecimento": "iniciante",
+    "horas_diarias_disponiveis": 2,
+    "dias_disponiveis": ["segunda", "terça", "quarta", "quinta", "sexta"],
+    "data_inicio": "01/04/2025",
+    "objetivos": "Aprender conceitos básicos de engenharia de dados e conseguir construir meu primeiro pipeline de dados",
+    "experiencia_previa": "Tenho conhecimentos básicos em SQL, mas nunca trabalhei com dados em larga escala",
+    "interesses_especificos": "Processamento de dados em tempo real e computação na nuvem"
+}
