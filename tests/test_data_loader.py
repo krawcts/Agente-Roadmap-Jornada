@@ -82,3 +82,14 @@ def test_override_file_type(mock_data_dir, capsys):
 
     assert content == "Custom content"
     assert "Arquivo de texto 'custom.dat' carregado com sucesso." in captured.out
+
+def test_get_data_dir():
+    """Testa se a função get_data_dir retorna um caminho válido para a pasta 'data'."""
+    data_dir = get_data_dir()
+    
+    # Verifica se o caminho termina com 'data'
+    assert os.path.basename(data_dir) == 'data'
+    
+    # Verifica se o diretório pai do caminho é o diretório raiz do projeto
+    expected_parent = os.path.dirname(os.path.dirname(__file__))
+    assert os.path.dirname(data_dir) == expected_parent
