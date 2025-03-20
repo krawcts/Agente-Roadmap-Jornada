@@ -1,6 +1,7 @@
 from utils.data_loader import load_file
 from utils.calendar_info import get_calendar_info
 from loguru import logger
+from config import FILES
 
 def make_final_prompt():
     """
@@ -12,17 +13,17 @@ def make_final_prompt():
         # ---- CARREGAMENTO DOS DADOS ----
     try:
         # Carrega o conteúdo do curso
-        conteudo_curso = load_file('conteudo_curso.json')
+        conteudo_curso = load_file(FILES["CONTENT"])
         if not conteudo_curso:
             raise FileNotFoundError("Conteúdo do curso não encontrado ou vazio")
 
         # Carrega as respostas do questionário do aluno
-        questionario_aluno = load_file('questionario_aluno.json')
+        questionario_aluno = load_file(FILES["QUESTIONNAIRE"])
         if not questionario_aluno:
             raise FileNotFoundError("Questionário do aluno não encontrado ou vazio")
 
         # Carrega as guidelines para criação do plano de estudos
-        guidelines = load_file('guidelines.txt')
+        guidelines = load_file(FILES["GUIDELINES"])
         if not guidelines:
             raise FileNotFoundError("Guidelines não encontradas ou vazias")
 

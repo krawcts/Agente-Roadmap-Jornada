@@ -4,6 +4,7 @@ import os
 import sys
 from loguru import logger
 from prompt_maker import make_final_prompt
+from config import MODEL
 
 # Carrega as variáveis de ambiente
 load_dotenv()
@@ -21,19 +22,19 @@ try:
     # Inicializa o cliente de inferência
     logger.info("Inicializando cliente de inferência com a API Hugging Face...")
     client = InferenceClient(
-        "meta-llama/Llama-3.2-3B-Instruct",
+        MODEL["NAME"],
         token=f"{HF_TOKEN}",
     )
 
     logger.info("Enviando prompt para o modelo e aguardando resposta...")
     output = client.text_generation(
         prompt_final,
-        max_new_tokens=1500,
+        max_new_tokens=MODEL["MAX_OUT_TOKENS"],
     )
 
     logger.success("Plano de estudos gerado com sucesso!")
     print(output)
-
+   
 except RuntimeError as e:
     logger.error(f"Erro ao gerar o plano de estudos: {e}")
     sys.exit(1)
