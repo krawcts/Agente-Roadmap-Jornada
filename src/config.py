@@ -12,8 +12,10 @@ FILES = {
 
 # Configurações do modelo de linguagem
 MODEL = {
-    "NAME": "meta-llama/Llama-3.2-3B-Instruct",
     "MAX_OUT_TOKENS": 1500,
+    "HUGGINGFACE_MODEL": "meta-llama/Llama-3.2-3B-Instruct",
+    "OPENAI_MODEL": "gpt-3.5-turbo",
+    "DEEPSEEK_MODEL": "deepseek-coder-33b-instruct"
 }
 
 # Configurações de validação
