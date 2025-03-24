@@ -88,15 +88,17 @@ def make_final_prompt():
     # Combinação de todos os prompts em um único prompt final
     prompt_final = f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
-    {prompt_conteudo_curso}
-
-    {prompt_questionario}
-
-    {prompt_calendario}
+    {prompt_instrucoes}
 
     {prompt_guidelines}
 
-    {prompt_instrucoes}
+    {prompt_conteudo_curso}
+
+    {prompt_calendario}
+
+    {prompt_questionario}     
+
+    
 
     <|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
