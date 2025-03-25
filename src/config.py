@@ -15,7 +15,8 @@ MODEL = {
     "MAX_OUT_TOKENS": 1500,
     "HUGGINGFACE_MODEL": "meta-llama/Llama-3.2-3B-Instruct",
     "OPENAI_MODEL": "gpt-3.5-turbo",
-    "DEEPSEEK_MODEL": "deepseek-coder-33b-instruct"
+    #The "deepseek-chat" model points to DeepSeek-V3. "The deepseek-reasoner" model points to DeepSeek-R1
+    "DEEPSEEK_MODEL": "deepseek-chat"
 }
 
 # Configurações de validação
