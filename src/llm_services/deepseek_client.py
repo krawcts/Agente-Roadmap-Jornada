@@ -1,23 +1,39 @@
-import os
 import json
 from openai import OpenAI
-from dotenv import load_dotenv
 from loguru import logger
 
 # Carrega variáveis de ambiente do arquivo .env
-load_dotenv()
+# Constantes
+MODEL = "deepseek-chat"
+SYSTEM_PROMPT = """
+Você é um assistente IA útil. Responda de forma clara e concisa,
+mantendo um tom profissional e amigável.
+"""
 
-class DeepseekService:
-    def __init__(self):
-        # Configuração inicial com a chave da OpenAI
-        self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"),base_url="https://api.deepseek.com")
-        self.default_model = "deepseek-chat"
-        self.system_prompt = """
-        Você é um assistente IA útil. Responda de forma clara e concisa,
-        mantendo um tom profissional e amigável.
+class DeepSeekService:
+    def __init__(self, api_key=None):
         """
+        Inicializa o serviço DeepSeek.
+        
+        Args:
+            api_key (str): Chave de API para DeepSeek
+        """
+        # Configuração inicial com a chave da API fornecida
+        self.api_key = api_key
+        
+        if not self.api_key:
+            logger.error("API key do DeepSeek não fornecida!")
+            raise ValueError("API key do DeepSeek é obrigatória")
+            
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url="https://api.deepseek.com"
+        )
+        
+        self.default_model = MODEL
+        self.system_prompt = SYSTEM_PROMPT
 
-    logger.add("deepseek.log", rotation="1 MB")  # Configura arquivo de log
+        logger.add("deepseek.log", rotation="1 MB")  # Configura arquivo de log
 
     def chat_completion(self, chat_history: list, system_prompt: str = None) -> str:    
         """Gera uma resposta do modelo de linguagem com base na entrada do usuário.
@@ -77,4 +93,4 @@ class DeepseekService:
             return f"Erro ao processar a requisição: {str(e)}"
 
 # Instância singleton para ser usada na aplicação
-deepseek_service = DeepseekService()
+deepseek_service = DeepSeekService()

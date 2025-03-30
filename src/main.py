@@ -1,5 +1,3 @@
-# src/main.py
-
 from dotenv import load_dotenv
 import sys
 from loguru import logger
@@ -12,14 +10,14 @@ load_dotenv()
 
 try:
     # Inicializa o modelo
-    model_name, token = initialize_model()
+    llm_service = initialize_model()
     
     # Gera o prompt final
     logger.info(f"Gerando prompt para o plano de estudos usando modelo {model_name}...")
     prompt_final = make_final_prompt()
 
     # Gera a resposta
-    output = generate_response(model_name, token, prompt_final, MODEL["MAX_OUT_TOKENS"])
+    output = llm_service.chat_completion(prompt_final)
 
     logger.success("Plano de estudos gerado com sucesso!")
     print(output)
