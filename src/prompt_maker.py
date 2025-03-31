@@ -1,9 +1,15 @@
-from utils.data_loader import load_file
-from utils.calendar_info import get_calendar_info
+from src.utils.data_loader import load_file
+from src.utils.calendar_info import get_calendar_info
 from loguru import logger
-from config import FILES
 
-def make_final_prompt():
+FILES = {
+    "CONTENT": "conteudo_curso.json",
+    "QUESTIONNAIRE": "questionario_aluno.json",
+    "GUIDELINES": "guidelines.txt",
+    "CALENDAR": "calendario_dados.json"
+}
+
+def make_final_prompt(user_data=None):
     """
     Carrega os dados necessários e cria o prompt final para o modelo.
     
@@ -17,10 +23,13 @@ def make_final_prompt():
         if not conteudo_curso:
             raise FileNotFoundError("Conteúdo do curso não encontrado ou vazio")
 
-        # Carrega as respostas do questionário do aluno
-        questionario_aluno = load_file(FILES["QUESTIONNAIRE"])
-        if not questionario_aluno:
-            raise FileNotFoundError("Questionário do aluno não encontrado ou vazio")
+        # Carrega as respostas do questionário do aluno ou usa dados fornecidos
+        if user_data:
+            questionario_aluno = user_data
+        else:
+            questionario_aluno = load_file(FILES["QUESTIONNAIRE"])
+            if not questionario_aluno:
+                raise FileNotFoundError("Questionário do aluno não encontrado ou vazio")
 
         # Carrega as guidelines para criação do plano de estudos
         guidelines = load_file(FILES["GUIDELINES"])
