@@ -1,96 +1,149 @@
-import json
-from openai import OpenAI
+import os
+import threading
+from openai import OpenAI, OpenAIError # Reuse the OpenAI library
 from loguru import logger
+from .base_client import BaseLLMService
 
-# Carrega variáveis de ambiente do arquivo .env
-# Constantes
-MODEL = "deepseek-chat"
-SYSTEM_PROMPT = """
-Você é um assistente IA útil. Responda de forma clara e concisa,
-mantendo um tom profissional e amigável.
-"""
+class DeepSeekService(BaseLLMService):
+    """
+    Singleton implementation for the DeepSeek API client.
 
-class DeepSeekService:
-    def __init__(self, api_key=None):
+    Uses the official OpenAI Python library configured for the DeepSeek API endpoint.
+    Requires the DEEPSEEK_API_KEY environment variable or an api_key passed
+    during the first instantiation.
+    """
+
+    _MODEL = "deepseek-chat"
+    _DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+    
+    _instance = None
+    _lock = threading.Lock()
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check locking
+                if cls._instance is None:
+                    logger.debug("Creating new DeepSeekService instance")
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, api_key: str = None, default_model: str = _MODEL):
         """
-        Inicializa o serviço DeepSeek.
-        
+        Initializes the DeepSeekService Singleton.
+
         Args:
-            api_key (str): Chave de API para DeepSeek
+            api_key (str, optional): DeepSeek API key. If None, attempts to read
+                                     from DEEPSEEK_API_KEY environment variable.
+                                     Defaults to None.
+            default_model (str, optional): The default DeepSeek model to use.
+                                           Defaults to "deepseek-chat".
+
+        Raises:
+            ValueError: If no API key is provided or found in environment variables.
+            ConnectionError: If the client fails to initialize (e.g., invalid key, wrong base URL).
         """
-        # Configuração inicial com a chave da API fornecida
-        self.api_key = api_key
-        
-        if not self.api_key:
-            logger.error("API key do DeepSeek não fornecida!")
-            raise ValueError("API key do DeepSeek é obrigatória")
-            
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url="https://api.deepseek.com"
-        )
-        
-        self.default_model = MODEL
-        self.system_prompt = SYSTEM_PROMPT
+        if self._initialized:
+            return
 
-        logger.add("deepseek.log", rotation="1 MB")  # Configura arquivo de log
+        with self._lock:
+            if self._initialized: # Double-check after acquiring lock
+                return
 
-    def chat_completion(self, chat_history: list, system_prompt: str = None) -> str:    
-        """Gera uma resposta do modelo de linguagem com base na entrada do usuário.
-            
+            logger.info("Initializing DeepSeekService...")
+            resolved_api_key = api_key or os.getenv('DEEPSEEK_TOKEN')
+
+            if not resolved_api_key:
+                logger.error("DeepSeek API key not provided and not found in DEEPSEEK_API_KEY environment variable.")
+                raise ValueError("DeepSeek API key is required for initialization.")
+
+            self.api_key = resolved_api_key
+            self.default_model = default_model
+
+            try:
+                # Initialize the OpenAI client, but point it to DeepSeek's API endpoint
+                self.client = OpenAI(
+                    api_key=self.api_key,
+                    base_url=self._DEEPSEEK_BASE_URL
+                )
+                logger.success(f"DeepSeek client initialized successfully. Endpoint: {self._DEEPSEEK_BASE_URL}, Default model: {self.default_model}")
+                self._initialized = True
+            except OpenAIError as e: # Catch OpenAIError as the library is reused
+                logger.error(f"Failed to initialize DeepSeek client (using OpenAI library): {e}")
+                raise ConnectionError(f"Failed to initialize DeepSeek Client: {e}") from e
+            except Exception as e:
+                logger.error(f"An unexpected error occurred during DeepSeek client initialization: {e}")
+                raise ConnectionError(f"Unexpected error initializing DeepSeek Client: {e}") from e
+
+    @property
+    def name(self) -> str:
+        """Returns the service name."""
+        return "deepseek"
+
+    def chat_completion(self, prompt: str, **kwargs) -> str:
+        """
+        Generates a chat completion using the DeepSeek API (via OpenAI library).
+
         Args:
-            user_input (str): Texto de entrada do usuário
-            system_prompt (str, optional): Prompt personalizado. Defaults para o prompt padrão.
-            
+            prompt (str): The user's input prompt.
+            **kwargs: Additional keyword arguments compatible with the OpenAI/DeepSeek API, such as:
+                - model (str): Override the default model (e.g., "deepseek-coder").
+                - temperature (float): Sampling temperature.
+                - max_tokens (int): Maximum number of tokens to generate.
+                - top_p (float): Nucleus sampling parameter.
+                - frequency_penalty (float): Penalty for frequent tokens.
+                - presence_penalty (float): Penalty for new tokens.
+                - stop (list[str]): List of stop sequences.
+
         Returns:
-            str: Resposta gerada pelo modelo
-        """  
-        try:  
-            # Log do histórico recebido  
-            logger.debug("Histórico recebido RAW:\n{}",  
-                        json.dumps(chat_history, indent=2, ensure_ascii=False))
-            # Estrutura correta exigida pela API  
-            messages = [{  
-                "role": "system",  
-                "content": system_prompt or self.system_prompt  
-            }]  
+            str: The content of the generated message.
 
-            valid_messages = []  
-            for idx, msg in enumerate(chat_history):  
-                if not isinstance(msg, dict):  
-                    logger.warning("Mensagem inválida (não é dicionário) no índice {}: {}", idx, msg)  
-                    continue  
+        Raises:
+            RuntimeError: If the service is not initialized.
+            OpenAIError: If the API call fails.
+        """
+        _SYSTEM_PROMPT = """
+            Você é um assistente IA útil. Responda de forma clara e concisa,
+            mantendo um tom profissional e amigável.
+            """
 
-                if "role" not in msg or "content" not in msg:  
-                    logger.warning("Estrutura inválida no índice {}: {}", idx, msg)  
-                    continue  
+        if not self._initialized or not self.client:
+            raise RuntimeError("DeepSeekService is not initialized.")
 
-                if msg["role"] not in ["user", "assistant"]:  
-                    logger.warning("Role inválido no índice {}: {}", idx, msg["role"])  
-                    continue  
+        model = kwargs.get("model", self.default_model)
+        logger.debug(f"Sending prompt to DeepSeek model {model} via endpoint {self._DEEPSEEK_BASE_URL}...")
 
-                valid_messages.append({  
-                    "role": str(msg["role"]),  
-                    "content": str(msg["content"])  
-                })  
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+            ]
 
-            logger.debug("Mensagens válidas processadas:\n{}",  
-                        json.dumps(valid_messages, indent=2, ensure_ascii=False))  
+        # Filter kwargs valid for the API
+        valid_api_keys = {
+            'temperature', 'max_tokens', 'top_p', 'frequency_penalty',
+            'presence_penalty', 'stop', 'stream'
+        }
+        api_kwargs = {k: v for k, v in kwargs.items() if k in valid_api_keys}
 
-            request_payload = messages + valid_messages  
-            logger.info("Enviando request para API:\n{}",  
-                       json.dumps(request_payload, indent=2, ensure_ascii=False))  
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                **api_kwargs
+            )
+            logger.debug("Received response from DeepSeek")
 
-            completion = self.client.chat.completions.create(  
-                model=self.default_model,  
-                messages=request_payload  
-            )  
-            return completion.choices[0].message.content
-        except Exception as e:  
-            logger.error("Erro na requisição: {}", str(e))  
-            logger.error("Payload causador do erro:\n{}",  
-                        json.dumps(request_payload, indent=2, ensure_ascii=False))  
-            return f"Erro ao processar a requisição: {str(e)}"
+            if response.choices:
+                content = response.choices[0].message.content
+                return content.strip() if content else ""
+            else:
+                logger.warning("DeepSeek response did not contain any choices.")
+                return ""
 
-# Instância singleton para ser usada na aplicação
-deepseek_service = DeepSeekService()
+        except OpenAIError as e: # Catch OpenAIError
+            logger.error(f"DeepSeek API call failed: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during DeepSeek API call: {e}")
+            raise RuntimeError(f"Unexpected error during DeepSeek chat completion: {e}") from e

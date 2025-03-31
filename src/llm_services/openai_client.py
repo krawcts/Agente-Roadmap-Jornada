@@ -1,97 +1,151 @@
-import json
-from openai import OpenAI
+import os
+import threading
+from openai import OpenAI, OpenAIError 
 from loguru import logger
+from .base_client import BaseLLMService
 
-# Constantes
-MODEL = "gpt-3.5-turbo"
-SYSTEM_PROMPT = """
-Você é um assistente IA útil e eficiente. Responda de forma clara e concisa,
-mantendo um tom profissional e amigável.
-"""
-MAX_COMPLETION_TOKENS = 1500
+class OpenAIService(BaseLLMService):
+    """
+    Singleton implementation for the OpenAI API client.
 
-class OpenAIService:
-    def __init__(self, api_key=None):
+    Uses the official OpenAI Python library to interact with the API.
+    Requires the OPENAI_API_KEY environment variable or an api_key passed
+    during the first instantiation.
+    """
+
+    _MODEL = "gpt-4o-mini"
+
+    _instance = None
+    _lock = threading.Lock()
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check locking
+                if cls._instance is None:
+                    logger.debug("Creating new OpenAIService instance")
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, api_key: str = None, default_model: str = _MODEL):
         """
-        Inicializa o serviço OpenAI.
-        
+        Initializes the OpenAIService Singleton.
+
         Args:
-            api_key (str): Chave de API para OpenAI
-        """
-        # Configuração inicial com a chave da API fornecida
-        self.api_key = api_key
-        
-        if not self.api_key:
-            logger.error("API key da OpenAI não fornecida!")
-            raise ValueError("API key da OpenAI é obrigatória")
-            
-        self.client = OpenAI(
-            api_key=self.api_key
-        )
-        
-        self.default_model = MODEL
-        self.system_prompt = SYSTEM_PROMPT
-        
+            api_key (str, optional): OpenAI API key. If None, attempts to read
+                                     from OPENAI_API_KEY environment variable.
+                                     Defaults to None.
+            default_model (str, optional): The default OpenAI model to use if
+                                           not specified in chat_completion kwargs.
+                                           Defaults to "gpt-3.5-turbo".
 
-        logger.add("openai.log", rotation="1 MB")  # Configura arquivo de log
-        logger.info(f"Cliente OpenAI inicializado com o modelo {self.default_model}")
-
-    def chat_completion(self, chat_history: list, system_prompt: str = None) -> str:    
+        Raises:
+            ValueError: If no API key is provided or found in environment variables.
+            ConnectionError: If the OpenAI client fails to initialize (e.g., invalid key).
         """
-        Gera uma resposta do modelo com base em um histórico de chat.
-        
+        if self._initialized:
+            return
+
+        with self._lock:
+            if self._initialized: # Double-check after acquiring lock
+                return
+
+            logger.info("Initializing OpenAIService...")
+            resolved_api_key = api_key or os.getenv('OPENAI_API_KEY') # Prioritize passed key
+
+            if not resolved_api_key:
+                logger.error("OpenAI API key not provided and not found in OPENAI_API_KEY environment variable.")
+                raise ValueError("OpenAI API key is required for initialization.")
+
+            self.api_key = resolved_api_key # Store the key if needed later, though client uses it directly
+            self.default_model = default_model
+
+            try:
+                # Initialize the official OpenAI client
+                self.client = OpenAI(api_key=self.api_key)
+                logger.success(f"OpenAI client initialized successfully. Default model: {self.default_model}")
+                self._initialized = True
+            except OpenAIError as e:
+                logger.error(f"Failed to initialize OpenAI client: {e}")
+                # Reset instance if initialization fails? Consider implications.
+                # OpenAIService._instance = None
+                raise ConnectionError(f"Failed to initialize OpenAI Client: {e}") from e
+            except Exception as e:
+                logger.error(f"An unexpected error occurred during OpenAI client initialization: {e}")
+                raise ConnectionError(f"Unexpected error initializing OpenAI Client: {e}") from e
+
+    @property
+    def name(self) -> str:
+        """Returns the service name."""
+        return "openai"
+
+    def chat_completion(self, prompt: str, **kwargs) -> str:
+        """
+        Generates a chat completion using the OpenAI API.
+
         Args:
-            chat_history (list): Lista de mensagens no formato {'role': X, 'content': Y}
-            system_prompt (str, optional): Prompt personalizado. Defaults para o prompt padrão.
-        
+            prompt (str): The user's input prompt.
+            **kwargs: Additional keyword arguments for the OpenAI API call, such as:
+                - model (str): Override the default model (e.g., "gpt-4").
+                - temperature (float): Sampling temperature.
+                - max_tokens (int): Maximum number of tokens to generate.
+                - top_p (float): Nucleus sampling parameter.
+                - frequency_penalty (float): Penalty for frequent tokens.
+                - presence_penalty (float): Penalty for new tokens.
+                - stop (list[str]): List of stop sequences.
+
         Returns:
-            str: Resposta gerada pelo modelo
-        """  
-        try:  
-            # Log do histórico recebido  
-            logger.debug("Histórico recebido RAW:\n{}",  
-                json.dumps(chat_history, indent=2, ensure_ascii=False))
-                
-            # Estrutura correta exigida pela API  
-            messages = [{  
-                "role": "system",  
-                "content": system_prompt or self.system_prompt  
-            }]  
+            str: The content of the generated message.
 
-            valid_messages = []  
-            for idx, msg in enumerate(chat_history):  
-                if not isinstance(msg, dict):  
-                    logger.warning("Mensagem inválida (não é dicionário) no índice {}: {}", idx, msg)  
-                    continue  
+        Raises:
+            RuntimeError: If the service is not initialized.
+            OpenAIError: If the API call fails.
+        """
 
-                if "role" not in msg or "content" not in msg:  
-                    logger.warning("Estrutura inválida no índice {}: {}", idx, msg)  
-                    continue  
+        _DEVELOPER_PROMPT = """
+            Você é um assistente IA útil. Responda de forma clara e concisa,
+            mantendo um tom profissional e amigável.
+            """
 
-                if msg["role"] not in ["user", "assistant"]:  
-                    logger.warning("Role inválido no índice {}: {}", idx, msg["role"])  
-                    continue  
+        if not self._initialized or not self.client:
+            raise RuntimeError("OpenAIService is not initialized.")
 
-                valid_messages.append({  
-                    "role": str(msg["role"]),  
-                    "content": str(msg["content"])  
-                })  
+        model = kwargs.get("model", self.default_model)
+        logger.debug(f"Sending prompt to OpenAI model {model}...")
 
-            logger.debug("Mensagens válidas processadas:\n{}",  
-                json.dumps(valid_messages, indent=2, ensure_ascii=False))  
+        # Prepare messages in the format OpenAI expects
+        messages = [
+            {"role": "developer", "content": _DEVELOPER_PROMPT},
+            {"role": "user", "content": prompt},
+            ]
 
-            request_payload = messages + valid_messages  
-            logger.info("Enviando request para API:\n{}",  
-                json.dumps(request_payload, indent=2, ensure_ascii=False))  
+        # Filter kwargs to pass only valid parameters to the OpenAI API
+        valid_api_keys = {
+            'temperature', 'max_tokens', 'top_p', 'frequency_penalty',
+            'presence_penalty', 'stop', 'stream' # Add others if needed
+        }
+        api_kwargs = {k: v for k, v in kwargs.items() if k in valid_api_keys}
 
-            completion = self.client.chat.completions.create(  
-                model=self.default_model,  
-                messages=request_payload,
-                max_completion_tokens=MAX_COMPLETION_TOKENS
-            )  
-            return completion.choices[0].message.content
-        except Exception as e:  
-            logger.error("Erro na requisição: {}", str(e))  
-            logger.error("Payload causador do erro:\n{}",  
-                json.dumps(request_payload, indent=2, ensure_ascii=False))  
-            return f"Erro ao processar a requisição: {str(e)}"
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                **api_kwargs
+            )
+            logger.debug("Received response from OpenAI")
+
+            # Extract the message content
+            if response.choices:
+                content = response.choices[0].message.content
+                return content.strip() if content else ""
+            else:
+                logger.warning("OpenAI response did not contain any choices.")
+                return "" # Return empty string if no choices are available
+
+        except OpenAIError as e:
+            logger.error(f"OpenAI API call failed: {e}")
+            raise # Re-raise the specific OpenAI error
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during OpenAI API call: {e}")
+            raise RuntimeError(f"Unexpected error during OpenAI chat completion: {e}") from e
