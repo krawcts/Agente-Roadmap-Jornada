@@ -43,15 +43,15 @@ DEEPSEEK_TOKEN=seu_token_deepseek
 Para executar o projeto após a instalação:
 
 ```bash
-poetry run python .src/main.py
+poetry run streamlit run Streamlit/streamlit_app.py 
 ```
 
 ## Estrutura do Projeto
 
 - `src/`: Contém o código-fonte do projeto.
-  - `model_api.py`: Lógica para seleção e uso dos modelos de linguagem.
-  - `main.py`: Ponto de entrada do projeto.
+  - `llm_service.py`: Lógica para seleção e uso dos modelos de linguagem.
   - `prompt_maker.py`: Módulo responsável por criar prompts para os modelos de linguagem.
-- `config.py`: Configurações centralizadas.
+- `Streamlit/`: Contém o código-fonte do projeto.
+  - `streamlit_app.py`: Aplicação principal desenvolvida com Streamlit.
 - `README.md`: Instruções de instalação e uso.
 - `.env`: Arquivo de variáveis de ambiente (não deve ser commitado no repositório).
