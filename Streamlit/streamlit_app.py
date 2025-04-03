@@ -23,8 +23,8 @@ logger.info("--- Aplicativo Streamlit Iniciando ---")
 try:
     # Assume que sua pasta src está um nível acima de onde streamlit_app_final.py está
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from src.prompt_maker import make_final_prompt
-    from src.llm_service import initialize_llm_service
+    from backend.prompt_maker import make_final_prompt
+    from backend.llm_service import initialize_llm_service
     logger.info("Importados com sucesso 'make_final_prompt' e 'initialize_llm_service'.")
 except ImportError as e:
     logger.error(f"Falha ao importar módulos personalizados: {e}. Verifique PYTHONPATH e localizações de arquivos.")

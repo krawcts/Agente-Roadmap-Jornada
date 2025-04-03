@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from src.utils.data_loader import load_file
+from backend.utils.data_loader import load_file
 
 def get_calendar_info(questionario_aluno=None):
     """

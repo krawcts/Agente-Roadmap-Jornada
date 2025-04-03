@@ -1,11 +1,11 @@
 import os
 import sys
 from loguru import logger
-from src.utils.select_model import select_model
-from src.llm_services.huggingface_client import HuggingFaceService
-from src.llm_services.openai_client import OpenAIService
-from src.llm_services.deepseek_client import DeepSeekService
-from src.llm_services.base_client import BaseLLMService
+from backend.utils.select_model import select_model
+from backend.llm_services.huggingface_client import HuggingFaceService
+from backend.llm_services.openai_client import OpenAIService
+from backend.llm_services.deepseek_client import DeepSeekService
+from backend.llm_services.base_client import BaseLLMService
 
 
 def initialize_llm_service() -> BaseLLMService:

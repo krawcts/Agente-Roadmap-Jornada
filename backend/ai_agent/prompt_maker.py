@@ -1,5 +1,5 @@
-from src.utils.data_loader import load_file
-from src.utils.calendar_info import get_calendar_info
+from backend.utils.data_loader import load_file
+from backend.utils.calendar_info import get_calendar_info
 from loguru import logger
 
 FILES = {

@@ -21,8 +21,8 @@ Os seguintes cursos devem ser priorizados para formar uma base sólida em engenh
    - Evitar agendar mais de 2 horas de estudo para um mesmo dia
 
 3. PRÁTICA E APLICAÇÃO
-   - Após cada módulo de aprendizado, reservar tempo para exercícios práticos
-   - Incluir pequenos projetos que integrem múltiplos conhecimentos
+   - Após cada módulo de aprendizado, reservar tempo para exercícios práticos!
+   - Sugerir um ou dois exemplos de projeto práticos que o aluno possa fazer para reforçar o aprendizado. 
 
 4. PONTO DE VERIFICAÇÃO
    - A cada 2-3 semanas, incluir um dia para revisão dos conceitos aprendidos
@@ -39,6 +39,8 @@ Os seguintes cursos devem ser priorizados para formar uma base sólida em engenh
 
 ## CONSIDERAÇÕES ESPECÍFICAS
 
-1. Para iniciantes absolutos, considerar iniciar com apenas 1 hora diária, aumentando gradualmente
+1. Para iniciantes, priorizar a construção de uma base sólida em lógica de programação antes de avançar para tópicos mais complexos
 2. Para alunos com conhecimento prévio em Python, pode-se acelerar esta parte ou focar em módulos específicos
-3. Os workshops devem ser intercalados com bootcamps para proporcionar uma experiência de aprendizado variada
+3. Use Markdown. 
+4. Inclua uma saudação personalizada, uma visão geral, uma divisão semanal de 12 semanas com base nos dias/horas disponíveis.
+5. 
