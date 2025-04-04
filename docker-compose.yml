@@ -1,0 +1,52 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studyplan_backend
+    env_file:
+      - .env # Pass environment variables (API keys) from .env file
+    environment:
+      - DATABASE_DIR_PATH=/app/data # Define onde o banco de dados será armazenado
+    volumes:
+      # Mount the host ./database directory to /app/database inside the container
+      # This persists the SQLite database file outside the container.
+      - ./data:/app/data
+      # Mount data directory (read-only might be sufficient)
+      # The path inside container depends on WORKDIR and COPY in Dockerfile.backend
+      # Since we copy ./backend to ./backend, data is at /app/backend/data
+      - ./backend/prompt_files:/app/prompt_files:ro
+    ports:
+      - "8000:8000" # Map host port 8000 to container port 8000
+    networks:
+      - mynetwork
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./Streamlit
+      dockerfile: Dockerfile
+    container_name: studyplan_frontend
+    volumes:
+      - ./Streamlit:/app
+    ports:
+      - "8501:8501" # Map host port 8501 to container port 8501
+    networks:
+      - mynetwork
+    environment:
+      # Pass the URL of the backend service to the frontend container
+      # 'backend' is the service name defined above, accessible via Docker's internal network
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend # Ensure backend starts before frontend attempts to connect
+    restart: unless-stopped
+
+
+networks:
+  mynetwork:
+
+# Optional: Define a named volume if you prefer over host mount for the database
+# volumes:
+#   db_data:
+# Then use 'db_data:/app/database' in the backend service volume definition.
+# Host mount is often simpler for SQLite development access.

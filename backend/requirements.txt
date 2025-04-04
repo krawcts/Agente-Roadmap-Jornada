@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlmodel
+requests
+loguru
+python-dotenv
+openai
+huggingface-hub
+pydantic[email]

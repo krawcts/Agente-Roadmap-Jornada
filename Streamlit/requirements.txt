@@ -1,0 +1,4 @@
+streamlit
+requests
+loguru
+python-dotenv
