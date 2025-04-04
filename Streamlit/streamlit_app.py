@@ -1,59 +1,36 @@
-# --- INÍCIO DO ARQUIVO streamlit_app_final.py ---
-
 import streamlit as st
+import os
 import sys
 import time
 import datetime
 from pathlib import Path
 from loguru import logger
 from dotenv import load_dotenv
+import requests
 
 # --- Configuração do Loguru ---
 logger.remove()
 logger.add(
     sys.stderr,
     format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
-    level="INFO" # Alterado para INFO para produção, DEBUG para desenvolvimento
+    level="DEBUG" # Alterado para INFO para produção, DEBUG para desenvolvimento
 )
-logger.info("--- Aplicativo Streamlit Iniciando ---")
+logger.info("--- Iniciando Aplicativo Streamlit ---")
 
-# --- Configuração de Ambiente e Caminho ---
-# Adiciona o diretório raiz ao PYTHONPATH se necessário para módulos personalizados
-# Garanta que este caminho esteja correto em relação a onde você executa o streamlit
-try:
-    # Assume que sua pasta src está um nível acima de onde streamlit_app_final.py está
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from backend.prompt_maker import make_final_prompt
-    from backend.llm_service import initialize_llm_service
-    logger.info("Importados com sucesso 'make_final_prompt' e 'initialize_llm_service'.")
-except ImportError as e:
-    logger.error(f"Falha ao importar módulos personalizados: {e}. Verifique PYTHONPATH e localizações de arquivos.")
-    st.error(f"Erro: Não foi possível carregar funções necessárias. Por favor, verifique a configuração da aplicação. Detalhes: {e}")
-    # Opcionalmente, sair se funções principais estiverem faltando
-    # sys.exit(1)
-    # Ou fornecer funções fictícias para permitir testes de interface:
-    def make_final_prompt(data):
-        logger.warning("Usando 'make_final_prompt' fictício.")
-        return f"Prompt fictício baseado em: {data}"
-    def initialize_llm_service():
-        logger.warning("Usando 'initialize_llm_service' fictício.")
-        class DummyLLM:
-            def chat_completion(self, prompt):
-                logger.warning("Usando 'chat_completion' fictício.")
-                time.sleep(2)
-                return f"Esta é uma resposta fictícia para o prompt:\n```\n{prompt}\n```"
-        return DummyLLM()
-
-
+# --- Variáveis de Ambiente ---
 load_dotenv()
+# Get Backend URL from environment variable (set in docker-compose)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000") # Default for local dev
+logger.info(f"Backend API URL: {BACKEND_URL}")
 logger.info("Variáveis de ambiente carregadas (se o arquivo .env existir).")
 
-# --- page_configuration (precisa ser o primeiro comando) ---
+# --- Configuração da Página (precisa ser o primeiro comando st) ---
 st.set_page_config(
         page_title="Gerador de Plano de Estudos IA",
         page_icon="🤖",
         layout="wide"
     )
+
 # --- Inicializar Estado da Sessão ---
 if 'page' not in st.session_state:
     st.session_state.page = 'form' # 'form' ou 'result'
@@ -67,49 +44,11 @@ if 'form_data' not in st.session_state:
     logger.debug("Estado da sessão 'form_data' inicializado como dicionário vazio.")
 if 'is_processing' not in st.session_state:
     st.session_state.is_processing = False
-
-# --- Navegação da Barra Lateral ---
-st.sidebar.title("Navegação")
-page_options = ["Formulário de Entrada", "Visualizar Plano"]
-current_page_display = "Formulário de Entrada" if st.session_state.page == 'form' else "Visualizar Plano"
-
-try:
-    current_page_index = page_options.index(current_page_display)
-except ValueError:
-    logger.warning(f"Página inválida '{st.session_state.page}' mapeada para '{current_page_display}'. Índice padrão usado.")
-    current_page_index = 0
-
-# Desabilite a navegação se estiver processando
-if st.session_state.is_processing:
-    st.sidebar.warning("⚠️ Processando sua solicitação... Por favor, aguarde.")
-    st.sidebar.radio(
-        "Navegação desabilitada durante processamento",
-        page_options,
-        index=current_page_index,
-        key='sidebar_nav',
-        disabled=True
-    )
-else:
-    selected_page_display = st.sidebar.radio(
-        "Ir para",
-        page_options,
-        index=current_page_index,
-        key='sidebar_nav'
-    )
-    new_page_state = 'form' if selected_page_display == "Formulário de Entrada" else 'result'
-    if new_page_state != st.session_state.page:
-        logger.info(f"Navegando da página '{st.session_state.page}' para '{new_page_state}' via barra lateral.")
-        st.session_state.page = new_page_state
-        st.rerun()
-
-if st.session_state.page == 'result':
-    st.sidebar.markdown("---")
-    if st.sidebar.button("⬅️ Voltar ao Formulário / Editar"):
-        logger.info("Usuário clicou no botão 'Voltar ao Formulário / Editar' na barra lateral.")
-        st.session_state.page = 'form'
-        st.rerun()
+if 'error_message' not in st.session_state:
+    st.session_state.error_message = None # Armazena erros do backend
 
 # --- Implementações das Páginas ---
+
 
 def form_page():
     """Renderiza a página do formulário de entrada."""
@@ -119,15 +58,22 @@ def form_page():
     ### Preencha o formulário abaixo para gerar seu plano de estudos personalizado!
     Quanto mais específico você for, melhor será o plano adaptado às suas necessidades e disponibilidade.
     """)
+    # Exibe mensagem de erro anterior, se houver
+    if st.session_state.error_message:
+        st.error(f"⚠️ Erro anterior: {st.session_state.error_message}")
+        st.session_state.error_message = None # Limpa após exibir
 
     defaults = st.session_state.get('form_data', {})
     logger.debug(f"Usando dados padrão do formulário: {defaults}")
 
     with st.form(key='study_plan_input_form'):
         st.subheader("Seus Dados")
+
+        # Nome e E-mail
         name = st.text_input("Nome*", value=defaults.get('name', ''), key="form_name")
         email = st.text_input("Email*", value=defaults.get('email', ''), key="form_email")
 
+        # Horas por dia disponíveis
         st.subheader("Disponibilidade")
         hours = st.slider(
             "Horas Disponíveis Por Dia*",
@@ -135,16 +81,15 @@ def form_page():
             key="form_hours"
         )
 
+        # Dias da semana disponíveis
         st.write("Selecione Dias Disponíveis (Seg-Dom)*")
         days_of_week = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
         weekdays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
-        
         # Se não houver dias selecionados anteriormente, pré-selecionar dias de semana
         if not defaults.get('available_days'):
             selected_days_values = weekdays
         else:
             selected_days_values = defaults.get('available_days', [])
-            
         available_days = []
         cols = st.columns(len(days_of_week))
         for i, day in enumerate(days_of_week):
@@ -154,6 +99,7 @@ def form_page():
                 if st.checkbox(day[:3], value=is_checked, key=f"form_day_{day}"):
                     available_days.append(day)
 
+        # Dia de início do plano
         start_date_default = defaults.get('start_date', datetime.date.today())
         if isinstance(start_date_default, str):
             try:
@@ -164,7 +110,6 @@ def form_page():
         elif not isinstance(start_date_default, datetime.date):
             logger.warning(f"Tipo de data inválido '{type(start_date_default)}' encontrado no estado da sessão. Usando hoje.")
             start_date_default = datetime.date.today()
-
         start_date = st.date_input(
             "Data de Início Preferida*",
             value=start_date_default,
@@ -172,6 +117,7 @@ def form_page():
             key="form_start_date"
         )
 
+        # Objetivos principais
         st.subheader("Objetivos")
         objectives = st.text_area(
             "Objetivos Principais de Aprendizagem*",
@@ -180,7 +126,8 @@ def form_page():
             placeholder="Ex: 'Aprender Python básico para análise de dados', 'Preparar para certificação em cloud'",
             key="form_objectives"
         )
-        # --- NOVO CAMPO: Objetivos Secundários ---
+
+        # Informações extras
         secondary_goals = st.text_area(
             "Objetivos Secundários (Opcional)",
             value=defaults.get('secondary_goals', ''),
@@ -188,41 +135,28 @@ def form_page():
             placeholder="Ex: 'Melhorar habilidades de documentação', 'Explorar bibliotecas relacionadas'",
             key="form_secondary_goals"
         )
-        # --- Fim do Novo Campo ---
 
         st.markdown("---")
         st.markdown("*\* Campos obrigatórios*")
 
-        submitted = st.form_submit_button("✨ Gerar Plano de Estudos")
+        # Desabilita o botão durante o processamento
+        submitted = st.form_submit_button("✨ Gerar Plano de Estudos", disabled=st.session_state.is_processing)
 
         if submitted:
             logger.info("Formulário enviado.")
             # --- Validação de Entrada ---
             validation_passed = True
             error_messages = []
-            if not name:
-                error_messages.append("Por favor, insira seu Nome.")
-                logger.warning("Falha na validação do formulário: Nome ausente.")
-                validation_passed = False
-            if not email: # Verificação básica
-                error_messages.append("Por favor, insira seu Email.")
-                logger.warning("Falha na validação do formulário: Email ausente.")
-                validation_passed = False
-            if not available_days:
-                error_messages.append("Por favor, selecione pelo menos um dia disponível.")
-                logger.warning("Falha na validação do formulário: Nenhum dia disponível selecionado.")
-                validation_passed = False
-            if not objectives: # Tornar objetivos primários obrigatórios
-                error_messages.append("Por favor, insira seus Objetivos Principais de Aprendizagem.")
-                logger.warning("Falha na validação do formulário: Objetivos Primários ausentes.")
-                validation_passed = False
+            if not name: error_messages.append("Por favor, insira seu Nome."); validation_passed = False
+            if not email: error_messages.append("Por favor, insira seu Email."); validation_passed = False 
+            if not available_days: error_messages.append("Por favor, selecione pelo menos um dia disponível."); validation_passed = False
+            if not objectives: error_messages.append("Por favor, insira seus Objetivos Principais de Aprendizagem."); validation_passed = False
 
             if not validation_passed:
                 for msg in error_messages:
                     st.error(f"⚠️ {msg}")
             else:
                 logger.info("Validação do formulário bem-sucedida.")
-
                 # --- Armazenar entradas atuais para possível pré-preenchimento ---
                 current_form_data = {
                     "name": name,
@@ -236,64 +170,59 @@ def form_page():
                 st.session_state.form_data = current_form_data
                 logger.debug(f"Dados do formulário atual armazenados no estado da sessão: {current_form_data}")
                 
-                # Ative a flag de processamento!
+                # Define flag de processamento e executa novamente para desabilitar botão/navegação
                 st.session_state.is_processing = True
-                logger.info("Definindo is_processing=True")
+                st.session_state.error_message = None # Limpa erros anteriores
+                st.rerun() # Executa novamente para mostrar spinner e desabilitar controles
 
-                # --- Preparar dados para a chamada LLM ---
-                # Criar uma cópia para evitar modificar diretamente o dicionário de estado da sessão, se necessário em outro lugar
-                api_data = current_form_data.copy()
-                # Formatar data como string para o prompt/API, se necessário
-                api_data["start_date"] = start_date.strftime("%Y-%m-%d")
-                logger.debug(f"Dados preparados para LLM: {api_data}")
+    # --- Lógica de Chamada da API (Fora do bloco do formulário, acionada pela flag is_processing) ---
+    if st.session_state.is_processing:
+        logger.info("Flag de processamento é True, tentando chamada de API.")
+        with st.spinner("⏳ Gerando seu plano de estudos personalizado via IA... Por favor, aguarde."):
+            try:
+                # Prepara payload de dados para a API backend
+                payload = st.session_state.form_data.copy()
+                # Converte data para string para serialização JSON
+                payload['start_date'] = payload['start_date'].isoformat()
 
-                # --- Mostrar Spinner e Chamar LLM Real ---
-                with st.spinner("⏳ Gerando seu plano de estudos personalizado via IA... Por favor, aguarde."):
-                    logger.info("Exibindo spinner e iniciando processo de geração de plano LLM.")
-                    try:
-                        # 1. Inicializar Serviço LLM
-                        logger.info("Inicializando Serviço LLM...")
-                        llm_service = initialize_llm_service()
-                        if not llm_service:
-                            # Lidar com caso onde inicialização retorna None ou levanta erro implicitamente
-                            raise ValueError("Serviço LLM não pôde ser inicializado. Verifique chaves de API e configuração.")
-                        logger.info("Serviço LLM inicializado com sucesso.")
+                logger.info(f"Enviando requisição POST para {BACKEND_URL}/generate_plan")
+                logger.debug(f"Payload: {payload}")
 
-                        # 2. Criar o Prompt
-                        # Garantir que make_final_prompt manipule corretamente o dicionário api_data,
-                        # incluindo o novo campo 'secondary_goals'.
-                        logger.info("Gerando prompt final...")
-                        final_prompt = make_final_prompt(api_data)
-                        logger.debug(f"Prompt Gerado:\n{final_prompt}")
+                # Faz a chamada de API para o backend
+                response = requests.post(f"{BACKEND_URL}/generate_plan", json=payload, timeout=180) # Timeout aumentado para LLM
+                response.raise_for_status() # Levanta HTTPError para respostas ruins (4xx ou 5xx)
 
-                        # 3. Chamar o LLM
-                        logger.info("Enviando prompt para LLM para completação...")
-                        generated_plan = llm_service.chat_completion(final_prompt)
-                        logger.info("Resposta recebida com sucesso do LLM.")
-                        logger.debug(f"Resposta LLM (bruta): {generated_plan[:200]}...") # Registrar trecho
+                # Processa resposta bem-sucedida
+                api_response = response.json()
+                logger.info("Chamada de API bem-sucedida.")
+                logger.debug(f"Resposta da API: {api_response}")
 
-                        if not generated_plan:
-                            logger.warning("LLM retornou uma resposta vazia ou nula.")
-                            raise ValueError("Recebeu uma resposta vazia da IA. Por favor, tente novamente.")
+                st.session_state.plan = api_response.get("generated_plan")
+                st.session_state.page = 'result'
+                st.session_state.is_processing = False # Reseta flag
+                st.success("✅ Plano de estudos gerado com sucesso!")
+                time.sleep(1.5)
+                st.rerun() # Executa novamente para navegar para a página de resultado
 
-                        st.session_state.plan = generated_plan # Armazenar o resultado real
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Falha na requisição da API: {e}", exc_info=True)
+                error_detail = f"Erro de comunicação com o servidor: {e}"
+                try:
+                    # Tenta obter erro mais específico do corpo da resposta, se disponível
+                    error_data = e.response.json()
+                    error_detail = error_data.get("detail", error_detail)
+                except Exception:
+                    pass # Mantém o detalhe do erro original
+                st.session_state.error_message = error_detail
+                st.session_state.is_processing = False # Reseta flag
+                st.rerun() # Executa novamente para mostrar erro na página do formulário
 
-                        # --- Resultado obtido com sucesso, desativa a flag ---
-                        st.session_state.is_processing = False
-                        st.session_state.page = 'result'
-                        logger.info("Estado da página definido para 'result'.")
-                        st.success("✅ Plano de estudos gerado com sucesso!")
-                        time.sleep(1.5) # Pequeno atraso para feedback do usuário
-                        logger.info("Acionando reexecução para navegar para página 'result'.")
-                        st.rerun()
-
-                    except Exception as e:
-                        st.session_state.is_processing = False
-                        logger.error(f"Erro durante interação LLM ou geração de plano: {e}", exc_info=True)
-                        st.error(f"❌ Ocorreu um erro: {e}. Por favor, verifique os logs ou tente novamente mais tarde.")
-                        st.rerun()  # Recarregar para atualizar a UI após o erro
-
-
+            except Exception as e: # Captura outros erros potenciais
+                logger.error(f"Ocorreu um erro inesperado durante o processamento: {e}", exc_info=True)
+                st.session_state.error_message = f"Ocorreu um erro inesperado: {e}"
+                st.session_state.is_processing = False # Reseta flag
+                st.rerun() # Executa novamente para mostrar erro na página do formulário
+             
 
 def result_page():
     """Renderiza a página de resultado exibindo o plano gerado."""
@@ -304,29 +233,36 @@ def result_page():
         logger.info("Plano de estudos encontrado no estado da sessão. Exibindo.")
         user_info = st.session_state.get('form_data', {})
 
-        # Exibir cabeçalho de contexto
+        # Exibe cabeçalho de contexto
         if user_info.get('name'):
             st.markdown(f"### Plano para {user_info['name']}")
         if user_info.get('start_date') and user_info.get('available_days'):
-            start_date_str = user_info['start_date'].strftime('%d de %B de %Y') if isinstance(user_info.get('start_date'), datetime.date) else "N/A"
+            # Garante que start_date seja um objeto de data para formatação
+            start_date_obj = user_info['start_date']
+            if isinstance(start_date_obj, str):
+                try:
+                    start_date_obj = datetime.date.fromisoformat(start_date_obj)
+                except ValueError:
+                    start_date_obj = None # Trata erro se o formato estiver errado
+
+            start_date_str = start_date_obj.strftime('%d de %B de %Y') if start_date_obj else "N/A"
             days_str = ', '.join(user_info['available_days'])
             st.markdown(f"*Começando em **{start_date_str}** | **{user_info.get('hours_per_day', 'N/A')}** horas/dia em **{days_str}***")
         if user_info.get('objectives'):
             st.markdown(f"**Objetivos Principais:** {user_info['objectives']}")
-        # Exibir objetivos secundários se fornecidos
         if user_info.get('secondary_goals'):
             st.markdown(f"**Objetivos Secundários:** {user_info['secondary_goals']}")
         st.markdown("---")
 
-        # Exibir o plano real do LLM
+        # Exibe o plano real do LLM
         st.markdown(st.session_state.plan)
         st.markdown("---") # Separador antes do botão de download
 
-        # Adicionar botão de download
+        # Adiciona botão de download
         try:
             user_name_for_file = user_info.get('name', 'usuario')
             safe_user_name = "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in user_name_for_file).replace(' ', '_')
-            file_name = f"plano_estudos_{safe_user_name}_{datetime.date.today()}.md" # Alterado para .md
+            file_name = f"plano_estudos_{safe_user_name}_{datetime.date.today()}.md"
             logger.debug(f"Nome de arquivo para download gerado: {file_name}")
             st.download_button(
                 label="📥 Baixar Plano como Markdown",
@@ -344,24 +280,76 @@ def result_page():
 
 
 def main():
-    """Função principal para controlar a renderização da página."""
-    # Renderizar a página apropriada com base no estado da sessão
+    """Função principal para configurar a barra lateral e controlar a renderização da página."""
+
+    # --- Navegação da Barra Lateral (Movida PARA DENTRO do main) ---
+    st.sidebar.title("Navegação")
+    page_options = ["Formulário de Entrada", "Visualizar Plano"]
+    current_page_display = "Formulário de Entrada" if st.session_state.page == 'form' else "Visualizar Plano"
+
+    try:
+        current_page_index = page_options.index(current_page_display)
+    except ValueError:
+        logger.warning(f"Página inválida '{st.session_state.page}' mapeada para '{current_page_display}'. Índice padrão usado.")
+        current_page_index = 0
+
+    # Desabilita navegação durante o processamento
+    nav_disabled = st.session_state.is_processing
+    if nav_disabled:
+        st.sidebar.warning("⚠️ Processando...")
+
+    selected_page_display = st.sidebar.radio(
+        "Ir para",
+        page_options,
+        index=current_page_index,
+        key='sidebar_nav',
+        disabled=nav_disabled # Desabilita botões de rádio
+    )
+
+    # Permite mudança de navegação apenas se não estiver processando
+    if not nav_disabled:
+        new_page_state = 'form' if selected_page_display == "Formulário de Entrada" else 'result'
+        if new_page_state != st.session_state.page:
+            logger.info(f"Navegando da página '{st.session_state.page}' para '{new_page_state}' via barra lateral.")
+            st.session_state.page = new_page_state
+            st.session_state.error_message = None # Limpa erros na navegação
+            st.rerun()
+
+    # Botão de voltar condicional (também desabilitado se estiver processando)
+    if st.session_state.page == 'result':
+        st.sidebar.markdown("---")
+        if st.sidebar.button("⬅️ Voltar ao Formulário / Editar", disabled=nav_disabled):
+            logger.info("Usuário clicou no botão 'Voltar ao Formulário / Editar' na barra lateral.")
+            st.session_state.page = 'form'
+            st.session_state.error_message = None # Limpa erros na navegação
+            st.rerun()
+    # --- Fim da Navegação da Barra Lateral ---
+
+
+    # --- Roteamento de Página ---
+    # Renderiza conteúdo da página *após* lidar com navegação e estado de processamento
     if st.session_state.page == 'form':
-        form_page()
+        form_page() # Esta função agora lida com a chamada de API se is_processing for True
     elif st.session_state.page == 'result':
         result_page()
     else:
+        # Fallback se o estado estiver de alguma forma inválido
         logger.error(f"Estado de página inválido encontrado: {st.session_state.page}. Voltando para o padrão.")
         st.session_state.page = 'form'
-        st.rerun() # Reexecutar para renderizar a página de formulário padrão
+        st.rerun()
 
+
+# --- Execução Principal ---
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         # Capturar erros potenciais durante configuração inicial ou renderização fora de manipuladores específicos
         logger.critical(f"Uma exceção não capturada ocorreu na execução principal: {e}", exc_info=True)
-        st.error(f"Ocorreu um erro crítico na aplicação: {e}. Por favor, verifique os logs.")
+        try:
+            st.error(f"Ocorreu um erro crítico na aplicação: {e}. Por favor, verifique os logs.")
+        except Exception:
+             print(f"Erro crítico antes da UI Streamlit poder exibi-lo: {e}")
     finally:
         # Este log pode aparecer frequentemente devido a reexecuções, considere nível ou posicionamento
         logger.debug("--- Ciclo de Execução da Aplicação Encerrado (ou Reexecução Acionada) ---")

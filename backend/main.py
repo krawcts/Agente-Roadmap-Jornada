@@ -1,60 +1,61 @@
-# backend/main.py
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, EmailStr, Field as PydanticField
-from typing import List, Optional
-import datetime
 from loguru import logger
+from contextlib import asynccontextmanager
+from sqlmodel import Session # Import Session type hint
+import sys
+import os
 
 # Adjust imports based on the new structure
-from .database.db_handler import get_session, create_db_and_tables, get_or_create_student, add_study_plan
-from .ai_agent.llm_service import initialize_llm_service
-from .ai_agent.prompt_maker import make_final_prompt
-from sqlmodel import Session # Import Session type hint
+from database.db_handler import get_session, create_db_and_tables, get_or_create_student, add_study_plan
+from ai_agent.llm_service import initialize_llm_service
+from ai_agent.prompt_maker import make_final_prompt
+from database.schemas import PlanRequestData, PlanResponse
 
-# --- Pydantic Models for API Request/Response ---
-class PlanRequestData(BaseModel):
-    name: str
-    email: EmailStr # Use Pydantic's email validation
-    hours_per_day: int = PydanticField(..., gt=0, le=8) # Add validation
-    available_days: List[str]
-    start_date: datetime.date
-    objectives: str
-    secondary_goals: Optional[str] = None
+# --- Lifespan Event Handler ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Manages application startup and shutdown events.
+    - Creates database and tables on startup.
+    - Handles potential errors during startup.
+    """
+    logger.info("Application lifespan startup...")
+    try:
+        # Startup logic: Create database tables
+        # This function already contains logging and basic error handling
+        create_db_and_tables()
+        logger.info("Database and tables checked/created successfully.")
+    except Exception as e:
+        # Log critical error if DB setup fails and prevent app from fully starting
+        logger.critical(f"CRITICAL: Failed to initialize database during startup: {e}", exc_info=True)
+        # Optionally re-raise to completely stop FastAPI startup,
+        #If DB is unavailable.
+        raise RuntimeError("Database initialization failed") from e
 
-class PlanResponse(BaseModel):
-    message: str
-    student_id: int
-    plan_id: int
-    generated_plan: str
+    yield # Application runs here
+
+    # Shutdown logic (optional, e.g., close connections if not managed elsewhere)
+    logger.info("Application lifespan shutdown...")
+    # Add any cleanup code here if needed
+
 
 # --- FastAPI App Initialization ---
-app = FastAPI(title="Study Plan Generator API")
+# Pass the lifespan context manager to the FastAPI app
+app = FastAPI(
+    title="Study Plan Generator API",
+    description="API to generate personalized study plans using AI.",
+    version="1.0.0",
+    lifespan=lifespan # Use the new lifespan manager
+)
 
 # --- Dependency Injection for LLM Service ---
 # Initialize LLM service once when the app starts (using Singleton pattern within initialize_llm_service)
+llm_service = None # Initialize as None first
 try:
     llm_service = initialize_llm_service()
     logger.info("LLM Service initialized successfully for FastAPI app.")
 except Exception as e:
     logger.critical(f"CRITICAL: Failed to initialize LLM Service on app startup: {e}", exc_info=True)
-    # Depending on severity, you might want the app to fail startup
-    # raise RuntimeError("LLM Service failed to initialize") from e
-    llm_service = None # Or set to None and handle in endpoint
-
-@app.on_event("startup")
-def on_startup():
-    """Create database and tables when the FastAPI app starts."""
-    logger.info("FastAPI app starting up...")
-    create_db_and_tables()
-    # You could also pre-initialize the LLM service here if not done above
-    # global llm_service
-    # if llm_service is None:
-    #     try:
-    #         llm_service = initialize_llm_service()
-    #         logger.info("LLM Service initialized successfully during startup event.")
-    #     except Exception as e:
-    #         logger.critical(f"CRITICAL: Failed to initialize LLM Service during startup event: {e}", exc_info=True)
-
 
 # --- API Endpoints ---
 @app.post("/generate_plan", response_model=PlanResponse)
@@ -64,8 +65,10 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
     """
     logger.info(f"Received request to generate plan for email: {request_data.email}")
 
+    # Check if LLM Service was initialized successfully
     if llm_service is None:
-        logger.error("LLM Service is not available.")
+        logger.error("LLM Service is not available (failed during initialization).")
+        # Use 503 Service Unavailable
         raise HTTPException(status_code=503, detail="AI Service is currently unavailable. Please try again later.")
 
     try:
@@ -75,9 +78,8 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
 
         # 2. Prepare data for prompt maker (convert Pydantic model to dict)
         # Ensure date is in the correct format if needed by prompt_maker
-        api_data_for_prompt = request_data.model_dump() # Use model_dump in Pydantic v2+
-        # api_data_for_prompt['start_date'] = request_data.start_date.strftime("%Y-%m-%d") # Already a date object, prompt_maker should handle
-
+        api_data_for_prompt = request_data.model_dump() 
+        
         # 3. Create the Prompt
         logger.info("Generating final prompt...")
         # Pass the dictionary directly to make_final_prompt
