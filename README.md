@@ -6,23 +6,19 @@ Este projeto implementa um agente inteligente para criação e gerenciamento de 
 ## Instalação
 
 ### Pré-requisitos
-- Python 3.8 ou superior
-- [Poetry](https://python-poetry.org/docs/#installation) (gerenciador de dependências)
+- Docker
+- Docker Compose
 
-### Passos para instalação
+## Executando com Docker
 
-1. Clone o repositório:
+O projeto está configurado para ser executado facilmente com Docker Compose, que gerencia tanto o backend (FastAPI) quanto o frontend (Streamlit). Comece clonando o repositório:
+
 ```bash
 git clone https://github.com/seu-usuario/Agente-Roadmap-Jornada.git
 cd Agente-Roadmap-Jornada
 ```
 
-2. Instale as dependências usando Poetry:
-```bash
-poetry install
-```
-
-## Configuração de Variáveis de Ambiente
+### Configuração de Variáveis de Ambiente
 
 O projeto utiliza variáveis de ambiente para gerenciar tokens e configurações sensíveis. Siga os passos abaixo para configurá-las:
 
@@ -38,20 +34,35 @@ OPENAI_TOKEN=seu_token_openai
 DEEPSEEK_TOKEN=seu_token_deepseek
 ```
 
-## Executando o Projeto
-
-Para executar o projeto após a instalação:
+### Construa e inicie os containers
 
 ```bash
-poetry run streamlit run Streamlit/streamlit_app.py 
+docker compose build
+docker compose up
+```
+
+### Acesse as aplicações
+
+- Acesse o backend em: `http://localhost:8000`
+- Acesse o frontend em: `http://localhost:8501`
+- Acesse a documentação da API em: `http://localhost:8000/docs`
+
+Para parar os containers:
+
+```bash
+docker compose down
 ```
 
 ## Estrutura do Projeto
-
-- `src/`: Contém o código-fonte do projeto.
-  - `llm_service.py`: Lógica para seleção e uso dos modelos de linguagem.
-  - `prompt_maker.py`: Módulo responsável por criar prompts para os modelos de linguagem.
-- `Streamlit/`: Contém o código-fonte do projeto.
-  - `streamlit_app.py`: Aplicação principal desenvolvida com Streamlit.
-- `README.md`: Instruções de instalação e uso.
+- `backend/`: Contém o código-fonte do backend.
+  - `main.py`: Aplicação FastAPI principal.
+  - `database/`: Módulos para gerenciamento do banco de dados SQLite.
+  - `ai_agent/`: Lógica para interação com modelos de linguagem.
+    - `llm_service.py`: Serviço para seleção e uso dos modelos de linguagem.
+    - `prompt_maker.py`: Módulo responsável por criar prompts para os modelos.
+  - `prompt_files/`: Arquivos de template para geração de prompts.
+`frontend/`: Contém o código-fonte do frontend Streamlit.
+  - `streamlit_app.py`: Interface de usuário baseada em Streamlit para interação com o sistema.
+- `data/`: Diretório onde o banco de dados SQLite é armazenado.
+- `docker-compose.yml`: Configuração dos serviços Docker.
 - `.env`: Arquivo de variáveis de ambiente (não deve ser commitado no repositório).
