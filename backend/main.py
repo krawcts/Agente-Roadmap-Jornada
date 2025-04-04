@@ -78,7 +78,11 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
 
         # 2. Prepare data for prompt maker (convert Pydantic model to dict)
         # Ensure date is in the correct format if needed by prompt_maker
-        api_data_for_prompt = request_data.model_dump() 
+        api_data_for_prompt = request_data.model_dump()
+        # Remove email from the data sent to the LLM for privacy/security
+        if 'email' in api_data_for_prompt:
+            api_data_for_prompt.pop('email')
+            logger.debug("Removed email from data sent to LLM for privacy") 
         
         # 3. Create the Prompt
         logger.info("Generating final prompt...")
