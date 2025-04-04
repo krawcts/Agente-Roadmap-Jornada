@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from backend.ai_agent.utils.data_loader import load_file
+from ai_agent.utils.data_loader import load_file
 
 def get_calendar_info(questionario_aluno=None):
     """

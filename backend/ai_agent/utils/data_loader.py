@@ -5,7 +5,7 @@ import json
 def get_data_dir():
     """Retorna o caminho para o diretório de dados"""
     # Caminho para a pasta data relativo ao diretório raiz do projeto
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')   
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'prompt_files')   
     return data_dir
 
 def load_file(filename, file_type=None):

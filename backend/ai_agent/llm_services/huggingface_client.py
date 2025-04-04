@@ -3,7 +3,7 @@ import threading
 from huggingface_hub import InferenceClient
 from huggingface_hub.utils import HfHubHTTPError 
 from loguru import logger
-from .base_client import BaseLLMService
+from ai_agent.llm_services.base_client import BaseLLMService
 
 class HuggingFaceService(BaseLLMService):
     """

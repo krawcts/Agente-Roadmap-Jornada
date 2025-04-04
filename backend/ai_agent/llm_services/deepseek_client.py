@@ -2,7 +2,7 @@ import os
 import threading
 from openai import OpenAI, OpenAIError # Reuse the OpenAI library
 from loguru import logger
-from .base_client import BaseLLMService
+from ai_agent.llm_services.base_client import BaseLLMService
 
 class DeepSeekService(BaseLLMService):
     """

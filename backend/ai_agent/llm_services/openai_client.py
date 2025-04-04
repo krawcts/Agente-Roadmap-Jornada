@@ -2,7 +2,7 @@ import os
 import threading
 from openai import OpenAI, OpenAIError 
 from loguru import logger
-from .base_client import BaseLLMService
+from ai_agent.llm_services.base_client import BaseLLMService
 
 class OpenAIService(BaseLLMService):
     """
