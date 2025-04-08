@@ -14,7 +14,7 @@ Este projeto implementa um agente inteligente para criação e gerenciamento de 
 O projeto está configurado para ser executado facilmente com Docker Compose, que gerencia tanto o backend (FastAPI) quanto o frontend (Streamlit). Comece clonando o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/Agente-Roadmap-Jornada.git
+git clone https://github.com/krawcts/Agente-Roadmap-Jornada.git
 cd Agente-Roadmap-Jornada
 ```
 
