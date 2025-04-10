@@ -1,4 +1,5 @@
 import streamlit as st
+from  streamlit_vertical_slider import vertical_slider
 import os
 import sys
 import time
@@ -73,31 +74,26 @@ def form_page():
         name = st.text_input("Nome*", value=defaults.get('name', ''), key="form_name")
         email = st.text_input("Email*", value=defaults.get('email', ''), key="form_email")
 
-        # Horas por dia disponíveis
-        st.subheader("Disponibilidade")
-        hours = st.slider(
-            "Horas Disponíveis Por Dia*",
-            min_value=1, max_value=8, value=defaults.get('hours_per_day', 3),
-            key="form_hours"
-        )
-
-        # Dias da semana disponíveis
-        st.write("Selecione Dias Disponíveis (Seg-Dom)*")
+        # Horas por dia da semana
+        st.subheader("Disponibilidade Semanal*")
         days_of_week = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
-        weekdays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"]
-        # Se não houver dias selecionados anteriormente, pré-selecionar dias de semana
-        if not defaults.get('available_days'):
-            selected_days_values = weekdays
-        else:
-            selected_days_values = defaults.get('available_days', [])
-        available_days = []
+        hours_per_day = {}
+        
+        # Default values from session or 0
+        default_hours = defaults.get('hours_per_day', {})
+        
         cols = st.columns(len(days_of_week))
-        for i, day in enumerate(days_of_week):
-            with cols[i]:
-                # Verificar se é um dia da semana (seg-sex) para marcar por padrão
-                is_checked = day in selected_days_values
-                if st.checkbox(day[:3], value=is_checked, key=f"form_day_{day}"):
-                    available_days.append(day)
+        for i, day in enumerate(days_of_week):  
+            with cols[i]:  
+                default_val = default_hours.get(day, 2 if day in ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"] else 0)  
+                hours = st.slider(  
+                    day[:3], 
+                    min_value=0,  
+                    max_value=8,  
+                    value=default_val,  
+                    key=f"form_hours_{day}"  
+                )  
+                hours_per_day[day] = hours
 
         # Dia de início do plano
         start_date_default = defaults.get('start_date', datetime.date.today())
@@ -117,23 +113,66 @@ def form_page():
             key="form_start_date"
         )
 
-        # Objetivos principais
-        st.subheader("Objetivos")
-        objectives = st.text_area(
-            "Objetivos Principais de Aprendizagem*",
-            value=defaults.get('objectives', ''),
-            height=100,
-            placeholder="Ex: 'Aprender Python básico para análise de dados', 'Preparar para certificação em cloud'",
-            key="form_objectives"
+        # Nível de conhecimento
+        st.subheader("Nível de Conhecimento*")
+        skill_options = ["Nunca utilizei", "Iniciante", "Intermediário", "Avançado"]
+        
+        python_level = st.radio(
+            "Qual seu nível em Python?",
+            options=skill_options,
+            index=skill_options.index(defaults.get('python_level', 'Iniciante')),
+            key="form_python_level"
+        )
+        
+        sql_level = st.radio(
+            "Qual seu nível em SQL?",
+            options=skill_options,
+            index=skill_options.index(defaults.get('sql_level', 'Iniciante')),
+            key="form_sql_level"
+        )
+        
+        cloud_level = st.radio(
+            "Qual seu nível em Cloud?",
+            options=skill_options,
+            index=skill_options.index(defaults.get('cloud_level', 'Iniciante')),
+            key="form_cloud_level"
         )
 
-        # Informações extras
-        secondary_goals = st.text_area(
-            "Objetivos Secundários (Opcional)",
-            value=defaults.get('secondary_goals', ''),
+        # Experiência com ferramentas
+        st.subheader("Experiência com Ferramentas*")
+        used_git = st.radio(
+            "Você já utilizou Git/GitHub?",
+            options=["Sim", "Não"],
+            index=0 if defaults.get('used_git', False) else 1,
+            key="form_used_git"
+        )
+        
+        used_docker = st.radio(
+            "Você já utilizou Docker?",
+            options=["Sim", "Não"],
+            index=0 if defaults.get('used_docker', False) else 1,
+            key="form_used_docker"
+        )
+
+        # Interesses adicionais
+        st.subheader("Interesses Adicionais (Opcional)")
+        interest_options = ["Webscraping", "n8n", "Airflow", "DBT", "PowerBI", "Kafka", "Terraform", "FastAPI"]
+        interests = st.pills(
+            "Em quais desses temas você também se interessa?",
+            options=interest_options,
+            selection_mode="multi",
+            default=defaults.get('interests', []),
+            key="form_interests"
+        )
+
+        # Desafio atual
+        st.subheader("Desafio Atual (Opcional)")
+        main_challenge = st.text_area(
+            "Qual o maior desafio que você precisa resolver hoje, seja no seu trabalho ou em algum projeto pessoal?",
+            value=defaults.get('main_challenge', ''),
             height=80,
-            placeholder="Ex: 'Melhorar habilidades de documentação', 'Explorar bibliotecas relacionadas'",
-            key="form_secondary_goals"
+            placeholder="Ex: 'Preciso automatizar relatórios mensais', 'Quero migrar minha aplicação para a nuvem'",
+            key="form_main_challenge"
         )
 
         st.markdown("---")
@@ -148,9 +187,13 @@ def form_page():
             validation_passed = True
             error_messages = []
             if not name: error_messages.append("Por favor, insira seu Nome."); validation_passed = False
-            if not email: error_messages.append("Por favor, insira seu Email."); validation_passed = False 
-            if not available_days: error_messages.append("Por favor, selecione pelo menos um dia disponível."); validation_passed = False
-            if not objectives: error_messages.append("Por favor, insira seus Objetivos Principais de Aprendizagem."); validation_passed = False
+            if not email: error_messages.append("Por favor, insira seu Email."); validation_passed = False
+            if sum(hours_per_day.values()) == 0: error_messages.append("Por favor, informe suas horas disponíveis em pelo menos um dia."); validation_passed = False
+            if not python_level: error_messages.append("Por favor, selecione seu nível em Python."); validation_passed = False
+            if not sql_level: error_messages.append("Por favor, selecione seu nível em SQL."); validation_passed = False
+            if not cloud_level: error_messages.append("Por favor, selecione seu nível em Cloud."); validation_passed = False
+            if not used_git: error_messages.append("Por favor, informe se já usou Git/GitHub."); validation_passed = False
+            if not used_docker: error_messages.append("Por favor, informe se já usou Docker."); validation_passed = False
 
             if not validation_passed:
                 for msg in error_messages:
@@ -161,11 +204,15 @@ def form_page():
                 current_form_data = {
                     "name": name,
                     "email": email,
-                    "hours_per_day": hours,
-                    "available_days": available_days,
+                    "hours_per_day": hours_per_day,
                     "start_date": start_date,
-                    "objectives": objectives,
-                    "secondary_goals": secondary_goals 
+                    "python_level": python_level,
+                    "sql_level": sql_level,
+                    "cloud_level": cloud_level,
+                    "used_git": used_git == "Sim",
+                    "used_docker": used_docker == "Sim",
+                    "interests": interests,
+                    "main_challenge": main_challenge
                 }
                 st.session_state.form_data = current_form_data
                 logger.debug(f"Dados do formulário atual armazenados no estado da sessão: {current_form_data}")

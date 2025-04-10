@@ -60,9 +60,26 @@ def make_final_prompt(user_data=None):
     # Prompt para introduzir o questionário do aluno
     prompt_questionario = f"""
     ## PERFIL DO ALUNO
-    O aluno forneceu as seguintes informações no questionário:
+    Nome: {questionario_aluno['name']}
+    Data de início: {questionario_aluno['start_date']}
 
-    {questionario_aluno}
+    ### Disponibilidade Semanal:
+    {chr(10).join(f"- {day}: {hours} horas" for day, hours in questionario_aluno['hours_per_day'].items() if hours > 0)}
+
+    ### Nível de Conhecimento:
+    - Python: {questionario_aluno['python_level']}
+    - SQL: {questionario_aluno['sql_level']}
+    - Cloud: {questionario_aluno['cloud_level']}
+
+    ### Experiência com Ferramentas:
+    - Git/GitHub: {'Sim' if questionario_aluno['used_git'] else 'Não'}
+    - Docker: {'Sim' if questionario_aluno['used_docker'] else 'Não'}
+
+    ### Interesses Adicionais:
+    {', '.join(questionario_aluno['interests']) if questionario_aluno['interests'] else 'Nenhum interesse adicional informado'}
+
+    ### Desafio Atual:
+    {questionario_aluno['main_challenge'] if questionario_aluno['main_challenge'] else 'Nenhum desafio específico informado'}
     """
 
     # Prompt com informações de calendário

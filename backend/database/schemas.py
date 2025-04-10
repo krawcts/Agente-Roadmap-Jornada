@@ -1,30 +1,66 @@
-from pydantic import BaseModel, EmailStr, Field as PydanticField
-from typing import List, Optional
-import datetime
+from pydantic import BaseModel, EmailStr, Field as PydanticField 
+from typing import Dict, List, Optional  
+import datetime  
+from enum import Enum
+
+# --- Definir Enums ---  
+class SkillLevel(str, Enum):  
+    NUNCA_UTILIZEI = "Nunca utilizei"  
+    INICIANTE = "Iniciante"  
+    INTERMEDIARIO = "Intermediário"  
+    AVANCADO = "Avançado"  
+
+class Weekday(str, Enum):  
+    SEGUNDA = "Segunda"  
+    TERCA = "Terça"  
+    QUARTA = "Quarta"  
+    QUINTA = "Quinta"  
+    SEXTA = "Sexta"  
+    SABADO = "Sábado"  
+    DOMINGO = "Domingo"
 
 # --- Pydantic Models for API Request/Response ---
 
-class PlanRequestData(BaseModel):
-    """Data required to request a new study plan."""
-    name: str
-    email: EmailStr # Use Pydantic's email validation
-    hours_per_day: int = PydanticField(..., description="Hours per day for studying", gt=0, le=8) # Added description, validation remains
-    available_days: List[str] = PydanticField(..., description="List of days available for study (e.g., ['Monday', 'Wednesday'])")
-    start_date: datetime.date
-    objectives: str = PydanticField(..., description="Main learning objectives")
-    secondary_goals: Optional[str] = PydanticField(None, description="Secondary goals or topics") # Explicitly set default to None
+class PlanRequestData(BaseModel):  
+    name: str  
+    email: EmailStr  
+    # Usar o Enum Weekday como chave do dicionário  
+    hours_per_day: Dict[Weekday, int] = PydanticField(  
+        ...,  
+        description="Horas de estudo por dia da semana (e.g. {'Segunda': 3, 'Terça': 2})"  
+    )  
+    start_date: datetime.date  
+    python_level: SkillLevel  
+    sql_level: SkillLevel  
+    cloud_level: SkillLevel  
+    used_git: bool  
+    used_docker: bool  
+    interests: Optional[List[str]] = None  
+    main_challenge: Optional[str] = None
 
-    # Example for model configuration if needed later
     class Config:
+        use_enum_values = True # Necessário para usar os valores string dos Enums na API/Schema
         schema_extra = {
             "example": {
-                "name": "Jane Doe",
-                "email": "jane.doe@example.com",
-                "hours_per_day": 3,
-                "available_days": ["Monday", "Tuesday", "Thursday"],
+                "name": "João Silva",
+                "email": "joao.silva@example.com",
+                "hours_per_day": {
+                    "Segunda": 3,
+                    "Terça": 2,
+                    "Quarta": 3,
+                    "Quinta": 2,
+                    "Sexta": 1,
+                    "Sábado": 0,
+                    "Domingo": 0
+                },
                 "start_date": "2024-05-15",
-                "objectives": "Learn FastAPI basics",
-                "secondary_goals": "Understand async programming"
+                "python_level": "Iniciante",
+                "sql_level": "Nunca utilizei",
+                "cloud_level": "Intermediário",
+                "used_git": True,
+                "used_docker": False,
+                "interests": ["FastAPI", "Terraform"],
+                "main_challenge": "Migrar aplicação para a nuvem"
             }
         }
 
