@@ -1,5 +1,4 @@
 import streamlit as st
-from  streamlit_vertical_slider import vertical_slider
 import os
 import sys
 import time
@@ -36,17 +35,19 @@ st.set_page_config(
 if 'page' not in st.session_state:
     st.session_state.page = 'form' # 'form' ou 'result'
     logger.debug("Estado da sessão 'page' inicializado para 'form'.")
-if 'plan' not in st.session_state:
-    st.session_state.plan = None
-    logger.debug("Estado da sessão 'plan' inicializado para None.")
 if 'form_data' not in st.session_state:
-    # Armazena os dados enviados para pré-preenchimento do formulário no retorno
-    st.session_state.form_data = {}
+    st.session_state.form_data = {} # Stores form inputs for pre-filling
     logger.debug("Estado da sessão 'form_data' inicializado como dicionário vazio.")
 if 'is_processing' not in st.session_state:
-    st.session_state.is_processing = False
+    st.session_state.is_processing = False # Flag to prevent multiple submissions/navigation
 if 'error_message' not in st.session_state:
-    st.session_state.error_message = None # Armazena erros do backend
+    st.session_state.error_message = None # Stores errors from backend or validation
+if 'plan_id' not in st.session_state:
+    st.session_state.plan_id = None # Stores the ID of the current study plan conversation
+    logger.debug("Estado da sessão 'plan_id' inicializado para None.")
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = [] # Stores the list of chat messages [{"role": ..., "content": ...}]
+    logger.debug("Estado da sessão 'chat_history' inicializado como lista vazia.")
 
 # --- Implementações das Páginas ---
 
@@ -244,8 +245,12 @@ def form_page():
                 logger.info("Chamada de API bem-sucedida.")
                 logger.debug(f"Resposta da API: {api_response}")
 
-                st.session_state.plan = api_response.get("generated_plan")
+                # Store the plan_id and the initial chat history
+                st.session_state.plan_id = api_response.get("plan_id")
+                st.session_state.chat_history = api_response.get("chat", [])
                 st.session_state.page = 'result'
+                logger.info(f"Navegando para a página de resultados com plan_id: {st.session_state.plan_id}")
+                logger.debug(f"Histórico de chat inicial armazenado: {st.session_state.chat_history}")
                 st.session_state.is_processing = False # Reseta flag
                 st.success("✅ Plano de estudos gerado com sucesso!")
                 time.sleep(1.5)
@@ -276,54 +281,89 @@ def result_page():
     logger.info("Renderizando página 'result'.")
     st.title("✅ Seu Plano de Estudos Gerado")
 
-    if st.session_state.plan:
-        logger.info("Plano de estudos encontrado no estado da sessão. Exibindo.")
-        user_info = st.session_state.get('form_data', {})
+    # Check if we have chat history instead of just the plan text
+    if 'chat_history' in st.session_state and st.session_state.chat_history:
+        logger.info("Histórico de chat encontrado no estado da sessão. Exibindo.")
+        user_info = st.session_state.get('form_data', {}) # Get form data for context if needed
 
-        # Exibe cabeçalho de contexto
-        if user_info.get('name'):
-            st.markdown(f"### Plano para {user_info['name']}")
-        if user_info.get('start_date') and user_info.get('available_days'):
-            # Garante que start_date seja um objeto de data para formatação
-            start_date_obj = user_info['start_date']
-            if isinstance(start_date_obj, str):
-                try:
-                    start_date_obj = datetime.date.fromisoformat(start_date_obj)
-                except ValueError:
-                    start_date_obj = None # Trata erro se o formato estiver errado
-
-            start_date_str = start_date_obj.strftime('%d de %B de %Y') if start_date_obj else "N/A"
-            days_str = ', '.join(user_info['available_days'])
-            st.markdown(f"*Começando em **{start_date_str}** | **{user_info.get('hours_per_day', 'N/A')}** horas/dia em **{days_str}***")
-        if user_info.get('objectives'):
-            st.markdown(f"**Objetivos Principais:** {user_info['objectives']}")
-        if user_info.get('secondary_goals'):
-            st.markdown(f"**Objetivos Secundários:** {user_info['secondary_goals']}")
+        # --- Display Chat History ---
+        st.subheader("💬 Conversa com o Assistente")
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
         st.markdown("---")
 
-        # Exibe o plano real do LLM
-        st.markdown(st.session_state.plan)
-        st.markdown("---") # Separador antes do botão de download
+        # --- Chat Input ---
+        if prompt := st.chat_input("Faça uma pergunta sobre o plano ou peça modificações...", disabled=st.session_state.is_processing):
+            logger.info(f"Chat input recebido: '{prompt}'")
+            # Append user message to session state and display it
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-        # Adiciona botão de download
-        try:
-            user_name_for_file = user_info.get('name', 'usuario')
-            safe_user_name = "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in user_name_for_file).replace(' ', '_')
-            file_name = f"plano_estudos_{safe_user_name}_{datetime.date.today()}.md"
-            logger.debug(f"Nome de arquivo para download gerado: {file_name}")
-            st.download_button(
-                label="📥 Baixar Plano como Markdown",
-                data=st.session_state.plan, # Assume que o plano está formatado em Markdown pelo LLM
-                file_name=file_name,
-                mime="text/markdown" # Usar tipo mime markdown
-            )
-        except Exception as e:
-            logger.error(f"Falha ao criar botão de download: {e}")
-            st.warning("Não foi possível gerar link de download.")
+            # Prepare data for the backend /continue_chat endpoint
+            chat_payload = {
+                "plan_id": st.session_state.plan_id,
+                "messages": st.session_state.chat_history # Send the full history including the new user message
+            }
+
+            # Call backend API to continue chat
+            st.session_state.is_processing = True
+            st.session_state.error_message = None
+            st.rerun() # Rerun to show spinner and disable input
+
+    # --- API Call Logic for Chat (outside main display block, triggered by is_processing) ---
+    # This reuses the is_processing flag, ensure it's correctly managed if form also uses it
+    # Consider a separate flag like 'is_chatting' if needed
+    elif st.session_state.is_processing and st.session_state.plan_id is not None:
+         logger.info(f"Flag de processamento é True e plan_id existe ({st.session_state.plan_id}), tentando chamada de API /continue_chat.")
+         with st.spinner("Pensando... 🧠"):
+            try:
+                chat_payload = {
+                    "plan_id": st.session_state.plan_id,
+                    "messages": st.session_state.chat_history
+                }
+                logger.info(f"Enviando requisição POST para {BACKEND_URL}/continue_chat")
+                logger.debug(f"Payload do Chat: {chat_payload}")
+
+                response = requests.post(f"{BACKEND_URL}/continue_chat", json=chat_payload, timeout=180)
+                response.raise_for_status()
+
+                api_response = response.json()
+                logger.info("Chamada de API /continue_chat bem-sucedida.")
+                logger.debug(f"Resposta da API /continue_chat: {api_response}")
+
+                # Update the chat history with the full history from the backend response
+                st.session_state.chat_history = api_response.get("chat", [])
+                st.session_state.is_processing = False # Reset flag
+                st.rerun() # Rerun to display the new assistant message
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Falha na requisição da API /continue_chat: {e}", exc_info=True)
+                error_detail = f"Erro de comunicação com o servidor: {e}"
+                try:
+                    error_data = e.response.json()
+                    error_detail = error_data.get("detail", error_detail)
+                except Exception:
+                    pass
+                # Display error within the chat page if possible, or use st.error
+                st.error(f"⚠️ Erro ao contatar o assistente: {error_detail}")
+                # Remove the user message that caused the error? Or allow retry?
+                # For now, just stop processing. Consider removing last user message:
+                # if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "user":
+                #     st.session_state.chat_history.pop()
+                st.session_state.is_processing = False # Reset flag
+                st.rerun() # Rerun to show error and re-enable input
+
+            except Exception as e:
+                logger.error(f"Ocorreu um erro inesperado durante o processamento do chat: {e}", exc_info=True)
+                st.error(f"⚠️ Ocorreu um erro inesperado: {e}")
+                st.session_state.is_processing = False # Reset flag
+                st.rerun() # Rerun to show error and re-enable input
 
     else:
-        logger.warning("Navegou para página 'result', mas nenhum plano de estudos encontrado no estado da sessão.")
-        st.warning("🤔 Nenhum plano de estudos encontrado. Por favor, volte para a página 'Formulário de Entrada' usando a barra lateral e gere um.")
+        logger.warning("Navegou para página 'result', mas nenhum histórico de chat encontrado no estado da sessão.")
+        st.warning("🤔 Nenhum plano ou conversa encontrada. Por favor, gere um novo plano usando o formulário.")
 
 
 def main():
@@ -365,10 +405,16 @@ def main():
     # Botão de voltar condicional (também desabilitado se estiver processando)
     if st.session_state.page == 'result':
         st.sidebar.markdown("---")
-        if st.sidebar.button("⬅️ Voltar ao Formulário / Editar", disabled=nav_disabled):
-            logger.info("Usuário clicou no botão 'Voltar ao Formulário / Editar' na barra lateral.")
+        # Rename button to "Novo Plano" and add reset logic
+        if st.sidebar.button("✨ Novo Plano de Estudos", disabled=nav_disabled):
+            logger.info("Usuário clicou no botão 'Novo Plano de Estudos'. Resetando estado.")
+            # Reset relevant session state variables
             st.session_state.page = 'form'
-            st.session_state.error_message = None # Limpa erros na navegação
+            st.session_state.plan_id = None
+            st.session_state.chat_history = []
+            st.session_state.form_data = {} # Clear form data as well
+            st.session_state.error_message = None
+            st.session_state.is_processing = False # Ensure processing is stopped
             st.rerun()
     # --- Fim da Navegação da Barra Lateral ---
 
