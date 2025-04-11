@@ -2,9 +2,9 @@ import os
 import sys
 from loguru import logger
 from ai_agent.utils.select_model import select_model
-from ai_agent.llm_services.huggingface_client import HuggingFaceService
 from ai_agent.llm_services.openai_client import OpenAIService
 from ai_agent.llm_services.deepseek_client import DeepSeekService
+from ai_agent.llm_services.openrouter_client import OpenRouterService
 from ai_agent.llm_services.base_client import BaseLLMService
 
 
@@ -18,27 +18,26 @@ def initialize_llm_service() -> BaseLLMService:
                        Retorna None se a inicialização falhar.
     """
     # Obtém tokens das variáveis de ambiente
-    hf_token = os.getenv('HF_TOKEN')
-    openai_token = os.getenv('OPENAI_TOKEN')
-    deepseek_token = os.getenv('DEEPSEEK_TOKEN')
+    openai_token = os.getenv('OPENAI_API_KEY')
+    deepseek_token = os.getenv('DEEPSEEK_API_KEY')
+    openrouter_token = os.getenv('OPENROUTER_API_KEY')
 
     # Seleciona o modelo e obtém o token
-    model_name, token = select_model(hf_token, openai_token, deepseek_token)
+    model_name, token = select_model(openai_token, deepseek_token, openrouter_token)
 
     # Obtém a instância Singleton do serviço apropriado
     llm_service_instance = None
     try:
         logger.info(f"Inicializando serviço para {model_name}...")
-        if model_name == 'huggingface':
-            # Calling HuggingFaceService() will return the Singleton instance
-            # Pass the API key for the *first* initialization
-            llm_service_instance = HuggingFaceService(api_key=token)
-        elif model_name == 'openai':
+        if model_name == 'openai':
             # Calling OpenAIService() will return the Singleton instance
             llm_service_instance = OpenAIService(api_key=token)
         elif model_name == 'deepseek':
             # Calling DeepSeekService() will return the Singleton instance
             llm_service_instance = DeepSeekService(api_key=token)
+        elif model_name == 'openrouter': # Added
+            # Calling OpenRouterService() will return the Singleton instance
+            llm_service_instance = OpenRouterService(api_key=token)
         else:
             # This case should ideally not be reached due to select_model logic
             logger.error(f"Tentativa de inicializar modelo desconhecido: {model_name}")
