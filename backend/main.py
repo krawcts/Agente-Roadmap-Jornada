@@ -6,10 +6,10 @@ import sys
 import os
 
 # Adjust imports based on the new structure
-from database.db_handler import get_session, create_db_and_tables, get_or_create_student, add_study_plan
+from database.db_handler import get_session, create_db_and_tables, get_or_create_student, add_study_plan, update_chat
 from ai_agent.llm_service import initialize_llm_service
 from ai_agent.prompt_maker import make_final_prompt
-from database.schemas import PlanRequestData, PlanResponse
+from database.schemas import PlanRequestData, PlanResponse, ContinueChatRequest
 
 # --- Lifespan Event Handler ---
 @asynccontextmanager
@@ -91,17 +91,24 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
         logger.debug(f"Generated Prompt Snippet:\n{final_prompt[:300]}...")
 
         # 4. Call the LLM
-        logger.info("Sending prompt to LLM for completion...")
-        generated_plan_text = llm_service.chat_completion(final_prompt)
-        logger.info("Successfully received response from LLM.")
+        logger.info("Sending initial prompt to LLM for plan generation...")
+        # Prepare the first message(s) for the LLM
+        # Consider adding a system prompt here if desired for initial generation
+        # e.g., initial_messages = [{"role": "system", "content": "You are a study plan assistant."}, {"role": "user", "content": final_prompt}]
+        initial_messages = [{"role": "user", "content": final_prompt}]
+        # Call the LLM with the initial message list
+        assistant_response_text = llm_service.chat_completion(messages=initial_messages)
+        logger.info("Successfully received initial plan response from LLM.")
 
-        if not generated_plan_text:
+        if not assistant_response_text:
             logger.warning("LLM returned an empty response.")
             raise HTTPException(status_code=500, detail="AI failed to generate a plan. Please try again.")
 
         # 5. Save the Study Plan to DB
         plan_save_data = api_data_for_prompt.copy() # Start with input data
-        plan_save_data["generated_plan"] = generated_plan_text # Add the generated plan
+        # Construct the initial conversation history (user prompt + assistant response)
+        initial_conversation_history = initial_messages + [{"role": "assistant", "content": assistant_response_text}]
+        plan_save_data["chat"] = initial_conversation_history # Save the initial history list under the new key
 
         new_plan = add_study_plan(session=session, student_id=student.id, plan_data=plan_save_data)
 
@@ -111,7 +118,7 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
             message="Study plan generated and saved successfully.",
             student_id=student.id,
             plan_id=new_plan.id,
-            generated_plan=generated_plan_text
+            chat=initial_conversation_history # Use the renamed field 'chat'
         )
 
     except HTTPException as http_exc:
@@ -125,3 +132,69 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
 @app.get("/")
 async def read_root():
     return {"message": "Study Plan Generator API is running."}
+
+
+@app.post("/continue_chat", response_model=PlanResponse)
+async def continue_chat(request_data: ContinueChatRequest, session: Session = Depends(get_session)): # Changed input type
+    """
+    Continues a conversation based on existing plan ID and current message history,
+    using PlanResponse as both input and output schema.
+    """
+    logger.info(f"Received request to continue chat for plan ID: {request_data.plan_id}")
+    # The full history, including the latest user message, is expected in request_data.chat
+    current_chat_history = request_data.messages # Access history via .messages
+    logger.debug(f"Received chat history: {current_chat_history}")
+
+    if not current_chat_history:
+         raise HTTPException(status_code=400, detail="Chat history cannot be empty.")
+    if current_chat_history[-1]['role'] != 'user':
+         raise HTTPException(status_code=400, detail="Last message in the history must be from the user.")
+
+    # Check if LLM Service was initialized successfully
+    if llm_service is None:
+        logger.error("LLM Service is not available (failed during initialization).")
+        raise HTTPException(status_code=503, detail="AI Service is currently unavailable. Please try again later.")
+
+    try:
+        # 1. Call the LLM with the provided message history
+        logger.info(f"Sending conversation history to LLM for plan ID: {request_data.plan_id}...")
+        assistant_response_text = llm_service.chat_completion(messages=request_data.messages) # Pass .messages to LLM
+        logger.info(f"Successfully received chat response from LLM for plan ID: {request_data.plan_id}.")
+
+        if not assistant_response_text:
+            logger.warning(f"LLM returned an empty response for plan ID: {request_data.plan_id}.")
+            raise HTTPException(status_code=500, detail="AI failed to generate a response. Please try again.")
+
+        # 2. Append assistant response to the history
+        updated_chat_history = request_data.messages + [{"role": "assistant", "content": assistant_response_text}] # Append to .messages
+        logger.debug(f"Updated chat history for plan ID {request_data.plan_id}: {updated_chat_history}")
+
+        # 3. Update the conversation snapshot in the DB (for observability)
+        updated_plan = update_chat(
+            session=session,
+            plan_id=request_data.plan_id,
+            conversation_history=updated_chat_history # Save the latest snapshot
+        )
+
+        if not updated_plan:
+            # This shouldn't happen if plan_id is valid, but handle defensively
+            logger.error(f"Failed to find plan ID {request_data.plan_id} during update after chat.")
+            raise HTTPException(status_code=404, detail=f"Study plan with ID {request_data.plan_id} not found.")
+
+        # 4. Return Success Response with the updated history
+        logger.success(f"Successfully continued chat and updated snapshot for plan ID {request_data.plan_id}")
+        # Reuse PlanResponse, filling required fields
+        return PlanResponse(
+            message="Chat continued successfully.",
+            student_id=updated_plan.student_id, # Get student_id from the updated plan object
+            plan_id=request_data.plan_id,
+            chat=updated_chat_history # Return the full updated history using the 'chat' field
+        )
+
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions directly
+        raise http_exc
+    except Exception as e:
+        logger.error(f"Error during chat continuation for plan ID {request_data.plan_id}: {e}", exc_info=True)
+        # Don't expose internal error details to the client
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing the chat message.")
