@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, create_engine, Session, select
+from typing import List, Dict
 from contextlib import contextmanager
 from pathlib import Path
 from loguru import logger
@@ -91,17 +92,19 @@ def add_study_plan(session: Session, student_id: int, plan_data: dict) -> StudyP
     logger.info(f"Adding study plan for student ID: {student_id}")
     logger.debug(f"Plan data: {plan_data}")
 
-    # Ensure available_days is a string (e.g., comma-separated)
-    available_days_str = ",".join(plan_data.get("available_days", []))
-
+    # Map incoming plan_data (should match Streamlit form structure) to the new model fields
     new_plan = StudyPlan(
         student_id=student_id,
-        hours_per_day=plan_data["hours_per_day"],
-        available_days=available_days_str,
-        start_date=plan_data["start_date"], # Assumes it's already a date object
-        objectives=plan_data["objectives"],
-        secondary_goals=plan_data.get("secondary_goals"), # Optional
-        generated_plan=plan_data["generated_plan"] # The plan from LLM
+        start_date=plan_data["start_date"], # Assumes it's already a date object from API layer
+        weekly_availability=plan_data["hours_per_day"], # Renamed in form/payload, maps to this field
+        python_level=plan_data["python_level"],
+        sql_level=plan_data["sql_level"],
+        cloud_level=plan_data["cloud_level"],
+        used_git=plan_data["used_git"], # Should be boolean
+        used_docker=plan_data["used_docker"], # Should be boolean
+        interests=plan_data.get("interests"), # Optional list
+        main_challenge=plan_data.get("main_challenge"), # Optional string
+        chat=plan_data["chat"] # Corrected to get chat history from 'chat' key
     )
     session.add(new_plan)
     session.flush() # Assign ID
@@ -109,4 +112,18 @@ def add_study_plan(session: Session, student_id: int, plan_data: dict) -> StudyP
     logger.info(f"Added new study plan with ID: {new_plan.id}")
     return new_plan
 
-# Add more CRUD functions as needed (e.g., get_plans_for_student)
+
+def update_chat(session: Session, plan_id: int, conversation_history: List[Dict[str, str]]) -> StudyPlan | None:
+    """Updates the conversation history snapshot for a specific study plan."""
+    logger.info(f"Updating conversation history snapshot for plan ID: {plan_id}")
+    plan = session.get(StudyPlan, plan_id) # Use session.get for primary key lookup
+    if plan:
+        plan.chat = conversation_history # Use the renamed field 'chat'
+        session.add(plan)
+        session.flush() # Apply changes to the session
+        session.refresh(plan) # Refresh the object with DB state (including potential triggers/defaults)
+        logger.info(f"Successfully updated conversation snapshot for plan ID: {plan_id}")
+        return plan
+    else:
+        logger.warning(f"Study plan with ID {plan_id} not found during update attempt.")
+        return None
