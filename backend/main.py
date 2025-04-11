@@ -88,7 +88,7 @@ async def generate_study_plan(request_data: PlanRequestData, session: Session = 
         logger.info("Generating final prompt...")
         # Pass the dictionary directly to make_final_prompt
         final_prompt = make_final_prompt(user_data=api_data_for_prompt)
-        logger.debug(f"Generated Prompt Snippet:\n{final_prompt[:300]}...")
+        logger.debug(f"Generated Prompt Snippet:\n{str(final_prompt)[:200]}...") # Truncated log
 
         # 4. Call the LLM
         logger.info("Sending initial prompt to LLM for plan generation...")
@@ -143,7 +143,7 @@ async def continue_chat(request_data: ContinueChatRequest, session: Session = De
     logger.info(f"Received request to continue chat for plan ID: {request_data.plan_id}")
     # The full history, including the latest user message, is expected in request_data.chat
     current_chat_history = request_data.messages # Access history via .messages
-    logger.debug(f"Received chat history: {current_chat_history}")
+    logger.debug(f"Received chat history Snippet: {str(current_chat_history)[:200]}...") # Truncated log
 
     if not current_chat_history:
          raise HTTPException(status_code=400, detail="Chat history cannot be empty.")
@@ -167,7 +167,7 @@ async def continue_chat(request_data: ContinueChatRequest, session: Session = De
 
         # 2. Append assistant response to the history
         updated_chat_history = request_data.messages + [{"role": "assistant", "content": assistant_response_text}] # Append to .messages
-        logger.debug(f"Updated chat history for plan ID {request_data.plan_id}: {updated_chat_history}")
+        logger.debug(f"Updated chat history Snippet for plan ID {request_data.plan_id}: {str(updated_chat_history)[:200]}...") # Truncated log
 
         # 3. Update the conversation snapshot in the DB (for observability)
         updated_plan = update_chat(
