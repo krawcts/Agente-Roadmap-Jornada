@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field as PydanticField 
-from typing import Dict, List, Optional  
+from typing import Dict, List, Optional, Any 
 import datetime  
 from enum import Enum
 
@@ -64,12 +64,33 @@ class PlanRequestData(BaseModel):
             }
         }
 
+# --- Schema for Chat Continuation Request ---
+
+class ContinueChatRequest(BaseModel):
+    """Request model specifically for the /continue_chat endpoint."""
+    plan_id: int = PydanticField(..., description="The ID of the study plan conversation to continue.")
+    messages: List[Dict[str, str]] = PydanticField(..., description="The current conversation history including the latest user message.")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "plan_id": 5,
+                "messages": [
+                    {"role": "user", "content": "Generate a plan..."},
+                    {"role": "assistant", "content": "Okay, here is week 1..."},
+                    {"role": "user", "content": "Can you explain week 2 in more detail?"}
+                ]
+            }
+        }
+
+# --- Unified Response Schema ---
+
 class PlanResponse(BaseModel):
-    """Response returned after successfully generating a plan."""
+    """Response/Request model for plan generation and chat continuation."""
     message: str
     student_id: int
     plan_id: int
-    generated_plan: str
+    chat: List[Dict[str, str]] # Renamed field for the full conversation history
 
     # Example for model configuration if needed later
     class Config:
@@ -78,6 +99,9 @@ class PlanResponse(BaseModel):
                 "message": "Study plan generated and saved successfully.",
                 "student_id": 1,
                 "plan_id": 5,
-                "generated_plan": "Week 1: Focus on chapters 1-3..."
+                "chat": [ # Renamed key in example
+                    {"role": "user", "content": "Generate a plan..."},
+                    {"role": "assistant", "content": "Okay, here is week 1..."}
+                ]
             }
         }
