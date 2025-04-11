@@ -53,7 +53,7 @@ class DeepSeekService(BaseLLMService):
                 return
 
             logger.info("Initializing DeepSeekService...")
-            resolved_api_key = api_key or os.getenv('DEEPSEEK_TOKEN')
+            resolved_api_key = api_key or os.getenv('DEEPSEEK_API_KEY')
 
             if not resolved_api_key:
                 logger.error("DeepSeek API key not provided and not found in DEEPSEEK_API_KEY environment variable.")
