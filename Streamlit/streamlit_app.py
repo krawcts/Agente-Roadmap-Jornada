@@ -234,7 +234,7 @@ def form_page():
                 payload['start_date'] = payload['start_date'].isoformat()
 
                 logger.info(f"Enviando requisição POST para {BACKEND_URL}/generate_plan")
-                logger.debug(f"Payload: {payload}")
+                logger.debug(f"Payload Snippet: {str(payload)[:200]}...") # Truncated log
 
                 # Faz a chamada de API para o backend
                 response = requests.post(f"{BACKEND_URL}/generate_plan", json=payload, timeout=180) # Timeout aumentado para LLM
@@ -243,14 +243,14 @@ def form_page():
                 # Processa resposta bem-sucedida
                 api_response = response.json()
                 logger.info("Chamada de API bem-sucedida.")
-                logger.debug(f"Resposta da API: {api_response}")
+                logger.debug(f"API Response Snippet: {str(api_response)[:200]}...") # Truncated log
 
                 # Store the plan_id and the initial chat history
                 st.session_state.plan_id = api_response.get("plan_id")
                 st.session_state.chat_history = api_response.get("chat", [])
                 st.session_state.page = 'result'
                 logger.info(f"Navegando para a página de resultados com plan_id: {st.session_state.plan_id}")
-                logger.debug(f"Histórico de chat inicial armazenado: {st.session_state.chat_history}")
+                logger.debug(f"Initial Chat History Snippet: {str(st.session_state.chat_history)[:200]}...") # Truncated log
                 st.session_state.is_processing = False # Reseta flag
                 st.success("✅ Plano de estudos gerado com sucesso!")
                 time.sleep(1.5)
@@ -279,63 +279,34 @@ def form_page():
 def result_page():
     """Renderiza a página de resultado exibindo o plano gerado."""
     logger.info("Renderizando página 'result'.")
+    # ADD THIS DEBUG LOG
+    logger.debug(f"Entering result_page. is_processing={st.session_state.get('is_processing', False)}, plan_id={st.session_state.get('plan_id')}")
     st.title("✅ Seu Plano de Estudos Gerado")
 
-    # Check if we have chat history instead of just the plan text
-    if 'chat_history' in st.session_state and st.session_state.chat_history:
-        logger.info("Histórico de chat encontrado no estado da sessão. Exibindo.")
-        user_info = st.session_state.get('form_data', {}) # Get form data for context if needed
-
-        # --- Display Chat History ---
-        st.subheader("💬 Conversa com o Assistente")
-        for message in st.session_state.chat_history:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        st.markdown("---")
-
-        # --- Chat Input ---
-        if prompt := st.chat_input("Faça uma pergunta sobre o plano ou peça modificações...", disabled=st.session_state.is_processing):
-            logger.info(f"Chat input recebido: '{prompt}'")
-            # Append user message to session state and display it
-            st.session_state.chat_history.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            # Prepare data for the backend /continue_chat endpoint
-            chat_payload = {
-                "plan_id": st.session_state.plan_id,
-                "messages": st.session_state.chat_history # Send the full history including the new user message
-            }
-
-            # Call backend API to continue chat
-            st.session_state.is_processing = True
-            st.session_state.error_message = None
-            st.rerun() # Rerun to show spinner and disable input
-
-    # --- API Call Logic for Chat (outside main display block, triggered by is_processing) ---
-    # This reuses the is_processing flag, ensure it's correctly managed if form also uses it
-    # Consider a separate flag like 'is_chatting' if needed
-    elif st.session_state.is_processing and st.session_state.plan_id is not None:
-         logger.info(f"Flag de processamento é True e plan_id existe ({st.session_state.plan_id}), tentando chamada de API /continue_chat.")
-         with st.spinner("Pensando... 🧠"):
+    # --- API Call Logic for Chat ---
+    # Check this FIRST: If processing is active (triggered by chat input rerun), call the API
+    if st.session_state.get('is_processing', False) and st.session_state.get('plan_id') is not None:
+         logger.info(f"Flag de processamento é True e plan_id existe ({st.session_state.get('plan_id')}), tentando chamada de API /continue_chat.")
+         with st.spinner("Pensando... 🧠"): # Spinner should show now
             try:
+                # Prepare payload using the latest chat history from session state
                 chat_payload = {
                     "plan_id": st.session_state.plan_id,
-                    "messages": st.session_state.chat_history
+                    "messages": st.session_state.chat_history # History already includes user's last message
                 }
                 logger.info(f"Enviando requisição POST para {BACKEND_URL}/continue_chat")
-                logger.debug(f"Payload do Chat: {chat_payload}")
+                logger.debug(f"Chat Payload Snippet: {str(chat_payload)[:200]}...") # Truncated log
 
                 response = requests.post(f"{BACKEND_URL}/continue_chat", json=chat_payload, timeout=180)
                 response.raise_for_status()
 
                 api_response = response.json()
                 logger.info("Chamada de API /continue_chat bem-sucedida.")
-                logger.debug(f"Resposta da API /continue_chat: {api_response}")
+                logger.debug(f"API /continue_chat Response Snippet: {str(api_response)[:200]}...") # Truncated log
 
                 # Update the chat history with the full history from the backend response
                 st.session_state.chat_history = api_response.get("chat", [])
-                st.session_state.is_processing = False # Reset flag
+                st.session_state.is_processing = False # Reset flag BEFORE rerunning
                 st.rerun() # Rerun to display the new assistant message
 
             except requests.exceptions.RequestException as e:
@@ -346,10 +317,8 @@ def result_page():
                     error_detail = error_data.get("detail", error_detail)
                 except Exception:
                     pass
-                # Display error within the chat page if possible, or use st.error
                 st.error(f"⚠️ Erro ao contatar o assistente: {error_detail}")
-                # Remove the user message that caused the error? Or allow retry?
-                # For now, just stop processing. Consider removing last user message:
+                # Consider removing last user message if needed, or just show error
                 # if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "user":
                 #     st.session_state.chat_history.pop()
                 st.session_state.is_processing = False # Reset flag
@@ -360,6 +329,34 @@ def result_page():
                 st.error(f"⚠️ Ocorreu um erro inesperado: {e}")
                 st.session_state.is_processing = False # Reset flag
                 st.rerun() # Rerun to show error and re-enable input
+
+    # --- Display Chat History and Input ---
+    # Check this SECOND: If NOT processing, display the chat interface
+    elif 'chat_history' in st.session_state and st.session_state.chat_history:
+        logger.info("Histórico de chat encontrado no estado da sessão. Exibindo.")
+        user_info = st.session_state.get('form_data', {}) # Get form data for context if needed
+
+        # Display Chat History
+        st.subheader("💬 Conversa com o Assistente")
+        # Skip the first message (initial user prompt) when displaying
+        for message in st.session_state.chat_history[1:]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        st.markdown("---")
+
+        # Chat Input (disabled during API call by the logic above)
+        logger.debug("About to render st.chat_input")
+        if prompt := st.chat_input("Faça uma pergunta sobre o plano ou peça modificações..."): # Input enabled when is_processing is False
+            logger.info(f"Chat input recebido: '{prompt}'")
+            # Append user message to session state and display it immediately
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"): # Display user message right away
+                 st.markdown(prompt)
+
+            # Set flag and rerun to trigger the API call block above
+            st.session_state.is_processing = True
+            st.session_state.error_message = None # Clear previous errors
+            st.rerun()
 
     else:
         logger.warning("Navegou para página 'result', mas nenhum histórico de chat encontrado no estado da sessão.")
