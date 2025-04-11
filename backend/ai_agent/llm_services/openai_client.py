@@ -1,5 +1,6 @@
 import os
 import threading
+from typing import List, Dict
 from openai import OpenAI, OpenAIError 
 from loguru import logger
 from ai_agent.llm_services.base_client import BaseLLMService
@@ -80,12 +81,13 @@ class OpenAIService(BaseLLMService):
         """Returns the service name."""
         return "openai"
 
-    def chat_completion(self, prompt: str, **kwargs) -> str:
+    def chat_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """
-        Generates a chat completion using the OpenAI API.
+        Generates a chat completion using the OpenAI API based on a list of messages.
 
         Args:
-            prompt (str): The user's input prompt.
+            messages (List[Dict[str, str]]): A list of message dictionaries,
+                                             e.g., [{"role": "user", "content": "Hello"}].
             **kwargs: Additional keyword arguments for the OpenAI API call, such as:
                 - model (str): Override the default model (e.g., "gpt-4").
                 - temperature (float): Sampling temperature.
@@ -103,22 +105,12 @@ class OpenAIService(BaseLLMService):
             OpenAIError: If the API call fails.
         """
 
-        _DEVELOPER_PROMPT = """
-            Você é um assistente IA útil. Responda de forma clara e concisa,
-            mantendo um tom profissional e amigável.
-            """
 
         if not self._initialized or not self.client:
             raise RuntimeError("OpenAIService is not initialized.")
 
         model = kwargs.get("model", self.default_model)
-        logger.debug(f"Sending prompt to OpenAI model {model}...")
-
-        # Prepare messages in the format OpenAI expects
-        messages = [
-            {"role": "developer", "content": _DEVELOPER_PROMPT},
-            {"role": "user", "content": prompt},
-            ]
+        logger.debug(f"Sending messages to OpenAI model {model}...")
 
         # Filter kwargs to pass only valid parameters to the OpenAI API
         valid_api_keys = {

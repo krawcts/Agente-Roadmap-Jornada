@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any 
+from typing import Any, List, Dict
 
 class BaseLLMService(ABC):
     """  
@@ -25,20 +25,24 @@ class BaseLLMService(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def chat_completion(self, prompt: str, **kwargs: Any) -> str:
-        """  
-        Gera uma resposta em texto (completion) baseada em um prompt fornecido.  
+    def chat_completion(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        """
+        Gera uma resposta de chat baseada em uma lista de mensagens fornecida.
 
-        Este é o método principal para interação com o LLM. As subclasses  
-        devem implementar a lógica específica de chamada da API para seu respectivo serviço.  
+        Este é o método principal para interação de chat com o LLM. As subclasses
+        devem implementar a lógica específica de chamada da API para seu respectivo serviço.
 
-        Args:  
-            prompt (str): O texto de entrada (prompt) para enviar ao LLM.  
-            **kwargs (Any): Argumentos de palavra-chave arbitrários que podem ser específicos  
-                            para a API LLM subjacente (por exemplo, temperatura,  
-                            max_tokens, substituição do nome do modelo, sequências de parada).  
-                            As implementações de subclasse devem lidar com os kwargs  
-                            relevantes para seu serviço.  
+        Args:
+            messages (List[Dict[str, str]]): Uma lista de dicionários representando o
+                                             histórico da conversa, onde cada dicionário
+                                             deve ter as chaves 'role' (e.g., 'system',
+                                             'user', 'assistant') e 'content' (o texto
+                                             da mensagem).
+            **kwargs (Any): Argumentos de palavra-chave arbitrários que podem ser específicos
+                            para a API LLM subjacente (por exemplo, temperatura,
+                            max_tokens, nome do modelo, sequências de parada).
+                            As implementações de subclasse devem lidar com os kwargs
+                            relevantes para seu serviço.
 
         Retorna:  
             str: A resposta em texto gerada pelo LLM.  

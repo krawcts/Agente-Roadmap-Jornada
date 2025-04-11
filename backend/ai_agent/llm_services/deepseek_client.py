@@ -1,5 +1,6 @@
 import os
 import threading
+from typing import List, Dict
 from openai import OpenAI, OpenAIError # Reuse the OpenAI library
 from loguru import logger
 from ai_agent.llm_services.base_client import BaseLLMService
@@ -81,12 +82,14 @@ class DeepSeekService(BaseLLMService):
         """Returns the service name."""
         return "deepseek"
 
-    def chat_completion(self, prompt: str, **kwargs) -> str:
+    def chat_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """
-        Generates a chat completion using the DeepSeek API (via OpenAI library).
+        Generates a chat completion using the DeepSeek API (via OpenAI library)
+        based on a list of messages.
 
         Args:
-            prompt (str): The user's input prompt.
+            messages (List[Dict[str, str]]): A list of message dictionaries,
+                                             e.g., [{"role": "user", "content": "Hello"}].
             **kwargs: Additional keyword arguments compatible with the OpenAI/DeepSeek API, such as:
                 - model (str): Override the default model (e.g., "deepseek-coder").
                 - temperature (float): Sampling temperature.
@@ -103,21 +106,12 @@ class DeepSeekService(BaseLLMService):
             RuntimeError: If the service is not initialized.
             OpenAIError: If the API call fails.
         """
-        _SYSTEM_PROMPT = """
-            Você é um assistente IA útil. Responda de forma clara e concisa,
-            mantendo um tom profissional e amigável.
-            """
 
         if not self._initialized or not self.client:
             raise RuntimeError("DeepSeekService is not initialized.")
 
         model = kwargs.get("model", self.default_model)
-        logger.debug(f"Sending prompt to DeepSeek model {model} via endpoint {self._DEEPSEEK_BASE_URL}...")
-
-        messages = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-            ]
+        logger.debug(f"Sending messages to DeepSeek model {model} via endpoint {self._DEEPSEEK_BASE_URL}...")
 
         # Filter kwargs valid for the API
         valid_api_keys = {
