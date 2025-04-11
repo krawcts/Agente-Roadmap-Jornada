@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
+from typing import Optional, List, Dict # Added Dict
 import datetime
-from sqlalchemy import Text  # Importe o tipo Text do SQLAlchemy
+from sqlalchemy import Text, Column, JSON # Added Column, JSON
 
 class Student(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -15,12 +15,17 @@ class Student(SQLModel, table=True):
 class StudyPlan(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     student_id: int = Field(foreign_key="student.id", index=True) # Link to Student table
-    hours_per_day: int
-    available_days: str # Store as comma-separated string or JSON string
     start_date: datetime.date
-    objectives: str = Field(sa_type=Text()) # Use TEXT para strings longas
-    secondary_goals: Optional[str] = Field(default=None, sa_type=Text())
-    generated_plan: str = Field(sa_type=Text()) # Armazena o plano completo
+    # Store weekly availability as JSON: {"Monday": 2, "Tuesday": 3, ...}
+    weekly_availability: Dict[str, int] = Field(sa_column=Column(JSON))
+    python_level: str
+    sql_level: str
+    cloud_level: str
+    used_git: bool
+    used_docker: bool
+    interests: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
+    main_challenge: Optional[str] = Field(default=None, sa_type=Text())
+    chat: List[Dict[str, str]] = Field(sa_column=Column(JSON)) # Renamed from generated_plan
     created_at: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     # Relationship: Each study plan belongs to one student
