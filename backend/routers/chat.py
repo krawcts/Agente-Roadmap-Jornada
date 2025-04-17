@@ -7,9 +7,9 @@ from database.schemas import ContinueChatRequest, PlanResponse
 from services.chat_service import ChatService
 from dependencies import get_llm_service
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(tags=["chat"])
 
-@router.post("/continue", response_model=PlanResponse)
+@router.post("/continue_chat", response_model=PlanResponse)
 async def continue_chat(
     request_data: ContinueChatRequest, 
     session: Session = Depends(get_session),

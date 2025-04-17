@@ -7,9 +7,9 @@ from database.schemas import PlanRequestData, PlanResponse
 from services.plan_service import PlanService
 from dependencies import get_llm_service
 
-router = APIRouter(prefix="/plan", tags=["plans"])
+router = APIRouter(tags=["plans"])
 
-@router.post("/generate", response_model=PlanResponse)
+@router.post("/generate_plan", response_model=PlanResponse)
 async def generate_study_plan(
     request_data: PlanRequestData, 
     session: Session = Depends(get_session),
@@ -25,8 +25,7 @@ async def generate_study_plan(
     """
     # Log request information but protect sensitive data
     logger.info(f"Received plan generation request for: {request_data.name} ({request_data.email})")
-    logger.debug(f"Study area: {request_data.study_area}, Level: {request_data.level}")
-
+    
     try:
         # Call service layer to handle business logic
         logger.debug("Calling PlanService to generate study plan")
