@@ -20,7 +20,7 @@ logger.info("--- Iniciando Aplicativo Streamlit ---")
 # --- Variáveis de Ambiente ---
 load_dotenv()
 # Get Backend URL from environment variable (set in docker-compose)
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000") # Default for local dev
+BACKEND_URL="http://localhost:8000"
 logger.info(f"Backend API URL: {BACKEND_URL}")
 logger.info("Variáveis de ambiente carregadas (se o arquivo .env existir).")
 
