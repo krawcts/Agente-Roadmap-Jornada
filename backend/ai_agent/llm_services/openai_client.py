@@ -14,7 +14,7 @@ class OpenAIService(BaseLLMService):
     during the first instantiation.
     """
 
-    _MODEL = "gpt-4o-mini"
+    _MODEL = "gpt-4.1-mini"
 
     _instance = None
     _lock = threading.Lock()
