@@ -10,7 +10,7 @@
         {"nome": "Módulo 1 (Aula 1-5)", "descricao": "Fundamentos de Python"},
         {"nome": "Módulo 2 (Aula 6-10)", "descricao": "Estruturas de dados e funções"},
         {"nome": "Módulo 3 (Aula 11-15)", "descricao": "Programação orientada a objetos"},
-        {"nome": "Módulo 4 (Aula 16-20)", "descricao": "Bibliotecas para análise de dados"}
+        {"nome": "Módulo 4 (Aula 16-20)", "descricao": "API, banco de dados e projeto CRUD"}
       ],
       "nivel": "iniciante a intermediário"
     },

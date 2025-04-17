@@ -3,33 +3,34 @@
 ## FUNDAMENTOS ESSENCIAIS
 Os seguintes cursos devem ser priorizados para formar uma base sólida em engenharia de dados:
 
-1. Bootcamp Intensivo Python - Base fundamental para qualquer engenheiro de dados
-2. Bootcamp Intensivo SQL - Conhecimento essencial para manipulação de dados
-3. Bootcamp Cloud para Dados - Fundamental para trabalhar com dados em escala
-4. Workshop Git e Github - Ferramenta imprescindível para controle de versão
-5. Workshop Infra, Linux, Docker - Infraestrutura é essencial para engenharia de dados
+1. Workshop Git e Github - Ferramenta imprescindível para controle de versão
+2. Bootcamp Intensivo Python - Base fundamental para qualquer engenheiro de dados
+3. Bootcamp Intensivo SQL - Conhecimento essencial para manipulação de dados
+4. Workshop Infra, Linux, Docker - Infraestrutura é essencial para engenharia de dados
+5. Bootcamp Cloud para Dados - Fundamental para trabalhar com dados em escala
 
 ## PRINCÍPIOS PARA O PLANO DE ESTUDOS
 
-1. PROGRESSÃO DE DIFICULDADE
-   - Iniciar com conteúdos de nível "iniciante" e progredir gradualmente
-   - Não agendar conteúdos avançados antes de concluir os pré-requisitos básicos
+1. DESAFIO ATUAL
+   - Caso o aluno tenha preenchido o campo "Desafio Atual", este deve ser o principal critério considerado para a organização do plano de estudos
 
-2. EQUILÍBRIO NA DISTRIBUIÇÃO
+
+2. PROGRESSÃO DE DIFICULDADE
+   - Iniciar com conteúdos de nível "iniciante" e progredir gradualmente
+   - Considerar o nível de conhecimento informado pelo aluno ao selecionar os conteúdos
+   - Para iniciantes, priorizar a construção de uma base sólida em lógica de programação antes de avançar para tópicos mais complexos
+
+3. EQUILÍBRIO NA DISTRIBUIÇÃO
    - Distribuir a carga de estudo de acordo com o tempo disponível do aluno
    - Alternar entre bootcamps (mais longos) e workshops (mais curtos)
-   - Evitar agendar mais de 2 horas de estudo para um mesmo dia
 
-3. PRÁTICA E APLICAÇÃO
+4. PRÁTICA E APLICAÇÃO
    - Após cada módulo de aprendizado, reservar tempo para exercícios práticos!
    - Sugerir um ou dois exemplos de projeto práticos que o aluno possa fazer para reforçar o aprendizado. 
 
-4. PONTO DE VERIFICAÇÃO
-   - A cada 2-3 semanas, incluir um dia para revisão dos conceitos aprendidos
-   - Estes pontos de verificação servem como momentos para consolidar o aprendizado
 
 5. SEQUÊNCIA RECOMENDADA
-   - Iniciar pelo Bootcamp Python e Workshop Git/Github
+   - Iniciar pelo Workshop de Git/Github, e depois o Bootcamp Python e 
    - Prosseguir para SQL após adquirir as bases de programação
    - Cloud e Docker/Infra devem vir após dominar os fundamentos de programação e banco de dados
 
@@ -37,10 +38,59 @@ Os seguintes cursos devem ser priorizados para formar uma base sólida em engenh
    - Respeitar o nível de conhecimento e objetivos específicos do aluno
    - Ajustar o ritmo conforme o desempenho e feedback do aluno
 
-## CONSIDERAÇÕES ESPECÍFICAS
+## FORMATO DE RESPOSTA
 
-1. Para iniciantes, priorizar a construção de uma base sólida em lógica de programação antes de avançar para tópicos mais complexos
-2. Para alunos com conhecimento prévio em Python, pode-se acelerar esta parte ou focar em módulos específicos
-3. Use Markdown. 
-4. Inclua uma saudação personalizada, uma visão geral, uma divisão semanal de 12 semanas com base nos dias/horas disponíveis.
-5. 
+1. ESTRUTURA GERAL
+   - Utilizar cabeçalhos formatados em Markdown (# para título principal, ## para seções, ### para subseções)
+   - Incluir uma introdução personalizada com o nome do aluno
+   - Apresentar uma visão geral do plano antes de entrar nos detalhes
+   - Concluir com uma seção de motivação e próximos passos
+
+2. PLANO SEMANAL
+   - Cada semana deve ter um título claro (ex: "## Semana 1: Fundamentos de Git e Python")
+   - Apresentar uma tabela para cada semana com as seguintes colunas:
+     | Dia | Atividade | Duração | Tipo |
+     |----|----|----|----| 
+   - A coluna "Dia" deve listar apenas os dias que o aluno informou ter disponibilidade
+   - A coluna "Atividade" deve descrever a atividade específica com o nome do curso
+   - A coluna "Duração" deve refletir o tempo disponível informado pelo aluno para cada dia
+   - A coluna "Tipo" deve classificar a atividade como "Teoria" ou "Prática"
+   - Após cada tabela semanal, incluir uma seção de "Marcos" destacando as realizações esperadas
+
+3. ELEMENTOS OBRIGATÓRIOS
+   - Tabela de resumo do plano completo no início
+   - Marcos de progresso ao final de cada semana
+   - Projetos práticos destacados em caixas ou com ênfase especial
+   - Dicas personalizadas baseadas no nível de conhecimento do aluno
+
+4. TOM E ESTILO
+   - Manter linguagem motivadora e acessível
+   - Usar segunda pessoa ("você") para criar engajamento
+   - Incluir pequenas celebrações ao final de módulos desafiadores
+   - Reconhecer os desafios específicos mencionados pelo aluno
+
+5. FORMATAÇÃO VISUAL
+   - Usar emojis relevantes para destacar pontos importantes (✅, 📌, 🚀, etc.)
+   - Aplicar negrito para destacar conceitos-chave
+   - Utilizar listas numeradas para sequências de aprendizado
+   - Criar separadores visuais entre as semanas (ex: "---")
+
+6. DIAGRAMA VISUAL
+   - Incluir ao final do plano um diagrama de timeline usando a sintaxe Mermaid
+   - O diagrama deve mostrar a progressão das semanas e tópicos principais
+   - Usar o seguinte formato base:
+     ```mermaid
+     gantt
+       title Plano de Estudos: [Nome do Aluno]
+       dateFormat  YYYY-MM-DD
+       axisFormat %d/%m
+       
+       section Fundamentos
+       Python Básico      :a1, [DATA_INICIO], 7d
+       Git & GitHub       :a2, after a1, 3d
+       
+       section Intermediário
+       // ... mais seções e tarefas
+     ```
+   - Ajustar as datas com base na data de início informada pelo aluno
+   - Agrupar atividades em seções lógicas (ex: Fundamentos, Ferramentas, Projetos)
