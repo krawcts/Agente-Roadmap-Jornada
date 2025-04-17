@@ -1,5 +1,7 @@
 # DIRETRIZES PARA CRIAÇÃO DO PLANO DE ESTUDOS EM ENGENHARIA DE DADOS
 
+
+
 ## FUNDAMENTOS ESSENCIAIS
 Os seguintes cursos devem ser priorizados para formar uma base sólida em engenharia de dados:
 
@@ -22,6 +24,7 @@ Os seguintes cursos devem ser priorizados para formar uma base sólida em engenh
 
 3. EQUILÍBRIO NA DISTRIBUIÇÃO
    - Distribuir a carga de estudo de acordo com o tempo disponível do aluno
+   - Montar um plano de 6 semanas de duração
    - Alternar entre bootcamps (mais longos) e workshops (mais curtos)
 
 4. PRÁTICA E APLICAÇÃO

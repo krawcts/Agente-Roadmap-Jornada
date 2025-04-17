@@ -48,6 +48,9 @@ if 'plan_id' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = [] # Stores the list of chat messages [{"role": ..., "content": ...}]
     logger.debug("Estado da sessão 'chat_history' inicializado como lista vazia.")
+if 'study_plan' not in st.session_state:
+    st.session_state.study_plan = None # Armazena apenas o conteúdo do plano de estudos
+    logger.debug("Estado da sessão 'study_plan' inicializado como None.")
 
 # --- Implementações das Páginas ---
 
@@ -335,6 +338,31 @@ def result_page():
     elif 'chat_history' in st.session_state and st.session_state.chat_history:
         logger.info("Histórico de chat encontrado no estado da sessão. Exibindo.")
         user_info = st.session_state.get('form_data', {}) # Get form data for context if needed
+
+        # Extrair o plano de estudos da primeira mensagem do assistente
+        if st.session_state.study_plan is None and len(st.session_state.chat_history) > 1:
+            for message in st.session_state.chat_history:
+                if message["role"] == "assistant":
+                    st.session_state.study_plan = message["content"]
+                    logger.info("Plano de estudos extraído e armazenado no estado da sessão.")
+                    break
+        
+        # Display Download Button if study plan is available
+        if st.session_state.study_plan:
+            # Criar o nome do arquivo baseado no nome do usuário e data atual
+            user_name = st.session_state.form_data.get('name', 'Aluno')
+            current_date = datetime.date.today().strftime("%Y-%m-%d")
+            filename = f"plano_estudos_{user_name.replace(' ', '_')}_{current_date}.md"
+            
+            # Adicionar botão de download no topo da página
+            st.download_button(
+                label="📥 Baixar Plano de Estudos",
+                data=st.session_state.study_plan,
+                file_name=filename,
+                mime="text/markdown",
+                help="Baixe seu plano de estudos personalizado em formato Markdown"
+            )
+            st.markdown("---")
 
         # Display Chat History
         st.subheader("💬 Conversa com o Assistente")
