@@ -67,7 +67,7 @@ def render_mermaid(code: str) -> None:
             mermaid.initialize({{ startOnLoad: true }});
         </script>
         """,
-        height=500  # Ajuste a altura conforme necessário
+        height=800  # Ajuste a altura conforme necessário
     )
 
 def extract_mermaid_blocks(content: str) -> list:
@@ -252,7 +252,7 @@ def form_page():
     # --- Lógica de Chamada da API (Fora do bloco do formulário, acionada pela flag is_processing) ---
     if st.session_state.is_processing:
         logger.info("Flag de processamento é True, tentando chamada de API.")
-        with st.spinner("⏳ Gerando seu plano de estudos personalizado via IA... Por favor, aguarde."):
+        with st.spinner("⏳ Gerando seu plano de estudos personalizado... Por favor, aguarde."):
             try:
                 # Prepara payload de dados para a API backend
                 payload = st.session_state.form_data.copy()
@@ -274,6 +274,15 @@ def form_page():
                 # Store the plan_id and the initial chat history
                 st.session_state.plan_id = api_response.get("plan_id")
                 st.session_state.chat_history = api_response.get("chat", [])
+
+                # Extrair o plano de estudos, antes de mudar de página
+                for message in st.session_state.chat_history:
+                    if message["role"] == "assistant":
+                        st.session_state.study_plan = message["content"]
+                        logger.info("Plano de estudos extraído e armazenado no estado da sessão.")
+                        break
+
+
                 st.session_state.page = 'result'
                 logger.info(f"Navegando para a página de resultados com plan_id: {st.session_state.plan_id}")
                 logger.debug(f"Initial Chat History Snippet: {str(st.session_state.chat_history)[:200]}...") # Truncated log
@@ -370,23 +379,6 @@ def result_page():
                     logger.info("Plano de estudos extraído e armazenado no estado da sessão.")
                     break
         
-        # Display Download Button if study plan is available
-        if st.session_state.study_plan:
-            # Criar o nome do arquivo baseado no nome do usuário e data atual
-            user_name = st.session_state.form_data.get('name', 'Aluno')
-            current_date = datetime.date.today().strftime("%Y-%m-%d")
-            filename = f"plano_estudos_{user_name.replace(' ', '_')}_{current_date}.md"
-            
-            # Adicionar botão de download no topo da página
-            st.download_button(
-                label="📥 Baixar Plano de Estudos",
-                data=st.session_state.study_plan,
-                file_name=filename,
-                mime="text/markdown",
-                help="Baixe seu plano de estudos personalizado em formato Markdown"
-            )
-            st.markdown("---")
-
         # Display Chat History
         st.subheader("💬 Conversa com o Assistente")
         # Skip the first message (initial user prompt) when displaying
@@ -473,6 +465,23 @@ def main():
             st.session_state.error_message = None
             st.session_state.is_processing = False # Ensure processing is stopped
             st.rerun()
+        
+        if st.session_state.study_plan:
+            st.sidebar.markdown("---")
+            # Criar o nome do arquivo baseado no nome do usuário e data atual
+            user_name = st.session_state.form_data.get('name', 'Aluno')
+            current_date = datetime.date.today().strftime("%Y-%m-%d")
+            filename = f"plano_estudos_{user_name.replace(' ', '_')}_{current_date}.md"
+            
+            # Adicionar botão de download
+            st.sidebar.download_button(
+                label="📥 Baixar Plano de Estudos",
+                data=st.session_state.study_plan,
+                file_name=filename,
+                mime="text/markdown",
+                help="Baixe seu plano de estudos personalizado em formato Markdown",
+                disabled=nav_disabled  # Desabilita durante o processamento
+            )
     # --- Fim da Navegação da Barra Lateral ---
 
 
