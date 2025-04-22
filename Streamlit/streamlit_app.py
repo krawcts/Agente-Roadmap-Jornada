@@ -22,7 +22,7 @@ logger.info("--- Iniciando Aplicativo Streamlit ---")
 # --- Variáveis de Ambiente ---
 load_dotenv()
 # Get Backend URL from environment variable (set in docker-compose)
-BACKEND_URL="http://localhost:8000"
+BACKEND_URL=os.getenv("BACKEND_URL", "http://backend:8000")
 logger.info(f"Backend API URL: {BACKEND_URL}")
 logger.info("Variáveis de ambiente carregadas (se o arquivo .env existir).")
 
@@ -393,6 +393,15 @@ def result_page():
         for message in st.session_state.chat_history[1:]:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
+
+                # Se for uma mensagem do assistente, procura por diagramas Mermaid
+                if message["role"] == "assistant":
+                    mermaid_blocks = extract_mermaid_blocks(message["content"])
+                    if mermaid_blocks:
+                        st.subheader("📊 Visualização do Plano")
+                        for mermaid_code in mermaid_blocks:
+                            render_mermaid(mermaid_code)
+
         st.markdown("---")
 
         # Chat Input (disabled during API call by the logic above)
