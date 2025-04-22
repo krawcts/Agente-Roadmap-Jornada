@@ -7,6 +7,8 @@ from pathlib import Path
 from loguru import logger
 from dotenv import load_dotenv
 import requests
+import streamlit.components.v1 as components
+import re
 
 # --- Configuração do Loguru ---
 logger.remove()
@@ -51,6 +53,27 @@ if 'chat_history' not in st.session_state:
 if 'study_plan' not in st.session_state:
     st.session_state.study_plan = None # Armazena apenas o conteúdo do plano de estudos
     logger.debug("Estado da sessão 'study_plan' inicializado como None.")
+
+def render_mermaid(code: str) -> None:
+    """Renderiza um diagrama Mermaid usando componentes HTML do Streamlit."""
+    components.html(
+        f"""
+        <pre class="mermaid">
+            {code}
+        </pre>
+
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true }});
+        </script>
+        """,
+        height=500  # Ajuste a altura conforme necessário
+    )
+
+def extract_mermaid_blocks(content: str) -> list:
+    """Extrai blocos de código Mermaid de texto markdown."""
+    pattern = r"```mermaid\s+(.*?)\s+```"
+    return re.findall(pattern, content, re.DOTALL)
 
 # --- Implementações das Páginas ---
 
